@@ -1,0 +1,4 @@
+{
+    "model_type": "nemo-conformer-aed",
+    "features_size": 128
+}

@@ -1,0 +1,27 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Large binary model weights (>100MB rejected by GitHub)
+# Download via ./download_models.sh
+models/**/*.gguf
+models/**/*.bin
+models/**/*.onnx
+models/**/*.ort
+*.gguf
+*.bin
+*.onnx
+*.ort
+*.tar.gz
+*.aria2
+*.incomplete
+
+# Local audio datasets & test recordings
+dataset/**/*.wav
+logs/**/*.wav
+*.wav
+
+# System and logs
+*.log
+.DS_Store
