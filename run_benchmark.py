@@ -45,8 +45,25 @@ def get_cpu_info():
     threads = os.cpu_count() or 1
     return f"{cpu_name} ({threads} threads)"
 
-# Evaluated models via Handy execution engine
+# Evaluated models via Handy execution engine (All 20 available model & quant configurations)
 MODELS = [
+    # Parakeet TDT 0.6B v2 (Flagship English)
+    {
+        "name": "Parakeet TDT 0.6B v2",
+        "family": "FastConformer (TDT)",
+        "quant": "Q4_K_M",
+        "format": "GGUF",
+        "size_mb": 453,
+        "model_id": "handy-computer/parakeet-tdt-0.6b-v2-gguf/parakeet-tdt-0.6b-v2-Q4_K_M.gguf"
+    },
+    {
+        "name": "Parakeet TDT 0.6B v2",
+        "family": "FastConformer (TDT)",
+        "quant": "Q8_0",
+        "format": "GGUF",
+        "size_mb": 695,
+        "model_id": "handy-computer/parakeet-tdt-0.6b-v2-gguf/parakeet-tdt-0.6b-v2-Q8_0.gguf"
+    },
     {
         "name": "Parakeet TDT 0.6B v2",
         "family": "FastConformer (TDT)",
@@ -54,6 +71,23 @@ MODELS = [
         "format": "ONNX",
         "size_mb": 451,
         "model_id": "parakeet-tdt-0.6b-v2"
+    },
+    # Parakeet TDT 0.6B v3 (Multilingual)
+    {
+        "name": "Parakeet TDT 0.6B v3",
+        "family": "FastConformer (TDT)",
+        "quant": "Q4_K_M",
+        "format": "GGUF",
+        "size_mb": 462,
+        "model_id": "handy-computer/parakeet-tdt-0.6b-v3-gguf/parakeet-tdt-0.6b-v3-Q4_K_M.gguf"
+    },
+    {
+        "name": "Parakeet TDT 0.6B v3",
+        "family": "FastConformer (TDT)",
+        "quant": "Q8_0",
+        "format": "GGUF",
+        "size_mb": 705,
+        "model_id": "handy-computer/parakeet-tdt-0.6b-v3-gguf/parakeet-tdt-0.6b-v3-Q8_0.gguf"
     },
     {
         "name": "Parakeet TDT 0.6B v3",
@@ -63,13 +97,14 @@ MODELS = [
         "size_mb": 456,
         "model_id": "parakeet-tdt-0.6b-v3"
     },
+    # Canary 180M Flash
     {
         "name": "Canary 180M Flash",
         "family": "Conformer-AED",
-        "quant": "FP32/Int8",
-        "format": "ONNX",
-        "size_mb": 146,
-        "model_id": "canary-180m-flash"
+        "quant": "Q4_K_M",
+        "format": "GGUF",
+        "size_mb": 132,
+        "model_id": "handy-computer/canary-180m-flash-gguf/canary-180m-flash-Q4_K_M.gguf"
     },
     {
         "name": "Canary 180M Flash",
@@ -80,12 +115,38 @@ MODELS = [
         "model_id": "handy-computer/canary-180m-flash-gguf/canary-180m-flash-Q8_0.gguf"
     },
     {
+        "name": "Canary 180M Flash",
+        "family": "Conformer-AED",
+        "quant": "FP32/Int8",
+        "format": "ONNX",
+        "size_mb": 146,
+        "model_id": "canary-180m-flash"
+    },
+    # Parakeet TDT CTC 110M
+    {
+        "name": "Parakeet TDT CTC 110M",
+        "family": "Conformer-CTC",
+        "quant": "Q4_K_M",
+        "format": "GGUF",
+        "size_mb": 85,
+        "model_id": "handy-computer/parakeet-tdt_ctc-110m-gguf/parakeet-tdt_ctc-110m-Q4_K_M.gguf"
+    },
+    {
         "name": "Parakeet TDT CTC 110M",
         "family": "Conformer-CTC",
         "quant": "Q8_0",
         "format": "GGUF",
         "size_mb": 129,
         "model_id": "handy-computer/parakeet-tdt_ctc-110m-gguf/parakeet-tdt_ctc-110m-Q8_0.gguf"
+    },
+    # SenseVoice Small
+    {
+        "name": "SenseVoice Small",
+        "family": "SenseVoice (CTC)",
+        "quant": "Q4_K_M",
+        "format": "GGUF",
+        "size_mb": 138,
+        "model_id": "handy-computer/SenseVoiceSmall-gguf/SenseVoiceSmall-Q4_K_M.gguf"
     },
     {
         "name": "SenseVoice Small",
@@ -95,6 +156,15 @@ MODELS = [
         "size_mb": 240,
         "model_id": "handy-computer/SenseVoiceSmall-gguf/SenseVoiceSmall-Q8_0.gguf"
     },
+    # Whisper Small.en
+    {
+        "name": "Whisper Small.en",
+        "family": "Whisper (Encoder-Decoder)",
+        "quant": "Q4_K_M",
+        "format": "GGUF",
+        "size_mb": 163,
+        "model_id": "handy-computer/whisper-small.en-gguf/whisper-small.en-Q4_K_M.gguf"
+    },
     {
         "name": "Whisper Small.en",
         "family": "Whisper (Encoder-Decoder)",
@@ -102,6 +172,15 @@ MODELS = [
         "format": "GGUF",
         "size_mb": 257,
         "model_id": "handy-computer/whisper-small.en-gguf/whisper-small.en-Q8_0.gguf"
+    },
+    # Whisper Medium
+    {
+        "name": "Whisper Medium.en",
+        "family": "Whisper (Encoder-Decoder)",
+        "quant": "Q4_K_M",
+        "format": "GGUF",
+        "size_mb": 480,
+        "model_id": "handy-computer/whisper-medium.en-gguf/whisper-medium.en-Q4_K_M.gguf"
     },
     {
         "name": "Whisper Medium",
@@ -111,6 +190,25 @@ MODELS = [
         "size_mb": 469,
         "model_id": "medium"
     },
+    # Whisper Base.en
+    {
+        "name": "Whisper Base.en",
+        "family": "Whisper (Encoder-Decoder)",
+        "quant": "FP16/FP32",
+        "format": "BIN",
+        "size_mb": 141,
+        "model_id": "ggml-base.en"
+    },
+    # Nemotron Streaming 0.6B
+    {
+        "name": "Nemotron Speech Streaming 0.6B",
+        "family": "FastConformer Streaming",
+        "quant": "Q4_K_M",
+        "format": "GGUF",
+        "size_mb": 453,
+        "model_id": "handy-computer/nemotron-speech-streaming-en-0.6b-gguf/nemotron-speech-streaming-en-0.6b-Q4_K_M.gguf"
+    },
+    # Moonshine V2 Medium
     {
         "name": "Moonshine V2 Medium",
         "family": "Conformer Streaming",
@@ -209,6 +307,47 @@ def get_audio_duration(wav_path: str) -> float:
         return float(res)
     except Exception:
         return 0.0
+
+def sync_handy_symlinks():
+    """Automatically sync all models in project models/ to Handy store for seamless zero-copy detection."""
+    handy_dir = os.path.expanduser("~/.local/share/com.pais.handy/models")
+    if not (shutil.which("handy") or os.path.isdir(handy_dir)):
+        return
+
+    os.makedirs(handy_dir, exist_ok=True)
+    # 1. Symlink top-level model folders and files
+    if os.path.exists(MODELS_DIR):
+        for entry in os.listdir(MODELS_DIR):
+            src = os.path.join(MODELS_DIR, entry)
+            dst = os.path.join(handy_dir, entry)
+            if not os.path.exists(dst):
+                try:
+                    os.symlink(src, dst)
+                except Exception:
+                    pass
+
+        # 2. Symlink all individual .gguf and .bin files from subdirectories
+        for root, _, files in os.walk(MODELS_DIR):
+            for f in files:
+                if f == "tokenizer.bin":
+                    continue
+                if f.endswith(".gguf") or f.endswith(".bin"):
+                    src = os.path.join(root, f)
+                    dst = os.path.join(handy_dir, f)
+                    if not os.path.exists(dst):
+                        try:
+                            os.symlink(src, dst)
+                        except Exception:
+                            pass
+
+        # 3. Root whisper medium alias
+        nested_bin = os.path.join(MODELS_DIR, "whisper-medium", "whisper-medium-q4_1.bin")
+        root_bin = os.path.join(MODELS_DIR, "whisper-medium-q4_1.bin")
+        if os.path.exists(nested_bin) and not os.path.exists(root_bin):
+            os.symlink(nested_bin, root_bin)
+        elif os.path.exists(root_bin) and not os.path.exists(nested_bin):
+            os.makedirs(os.path.dirname(nested_bin), exist_ok=True)
+            os.symlink(root_bin, nested_bin)
 
 def check_handy_model_available(model_id: str) -> bool:
     """Check if Handy model is available, linking it if found in project models directory."""
@@ -404,7 +543,8 @@ def evaluate_audio_file(
     slice_name: str,
     base_log_dir: str,
     cpu_desc: str,
-    all_evaluations: list
+    all_evaluations: list,
+    model_filters: list = None
 ) -> list:
     """Run Handy model matrix against a single audio slice, saving logs after each model."""
     duration = get_audio_duration(audio_path)
@@ -429,6 +569,11 @@ def evaluate_audio_file(
         current_slice_results = ev_entry["results"]
 
     for m in MODELS:
+        if model_filters:
+            search_blob = f"{m['name']} {m['family']} {m['model_id']} {m['quant']} {m['format']}".lower()
+            if not any(f.lower() in search_blob for f in model_filters):
+                continue
+
         print(f"  Testing [{m['format']} {m['quant']}] {m['name']} ({m['size_mb']}MB)... ", end="", flush=True)
         if not shutil.which("handy"):
             print("SKIPPED (handy binary not located)")
@@ -492,6 +637,7 @@ def main():
     parser = argparse.ArgumentParser(description="STT CPU Matrix Benchmark Suite (Handy-Only, Real-Time Logging)")
     parser.add_argument("--script", choices=["all", "non_technical", "technical"], default="all")
     parser.add_argument("--slices", nargs="+", default=["slice_30s", "slice_60s", "slice_120s", "slice_180s"])
+    parser.add_argument("--models", nargs="+", help="Filter models by substring (e.g. --models canary whisper parakeet)")
     parser.add_argument("--audio", help="Direct test audio wav file override")
     parser.add_argument("--ref", help="Direct reference text file override")
     args = parser.parse_args()
@@ -500,6 +646,9 @@ def main():
         print("[ERROR] 'handy' executable was not found in PATH.")
         print("Please install Handy first: https://github.com/cjpais/handy/releases")
         sys.exit(1)
+
+    # Sync local model directory symlinks into Handy data directory
+    sync_handy_symlinks()
 
     cpu_desc = get_cpu_info()
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -521,6 +670,8 @@ def main():
     print(f" Engine         : Handy CLI ({shutil.which('handy')})")
     print(f" Log Directory  : {out_dir}")
     print(f" Latest Symlink : {latest_symlink}")
+    if args.models:
+        print(f" Filter Models  : {args.models}")
     print(f"=======================================================")
 
     all_evaluations = []
@@ -530,7 +681,7 @@ def main():
             ref_text = f.read().strip()
         evaluate_audio_file(
             args.audio, ref_text, "custom_run", os.path.basename(args.audio),
-            out_dir, cpu_desc, all_evaluations
+            out_dir, cpu_desc, all_evaluations, model_filters=args.models
         )
     else:
         scripts = ["non_technical", "technical"] if args.script == "all" else [args.script]
@@ -549,7 +700,7 @@ def main():
                     ref_text = f.read().strip()
                 evaluate_audio_file(
                     wav_path, ref_text, s, sl,
-                    out_dir, cpu_desc, all_evaluations
+                    out_dir, cpu_desc, all_evaluations, model_filters=args.models
                 )
 
     if not all_evaluations:

@@ -261,7 +261,7 @@ def sync_handy_symlinks():
     os.makedirs(HANDY_MODELS_DIR, exist_ok=True)
     print("\n[INFO] Synchronizing model symlinks with Handy data directory...")
 
-    # Symlink top-level model folders and files
+    # 1. Symlink top-level model folders and files
     for entry in os.listdir(MODELS_DIR):
         src = os.path.join(MODELS_DIR, entry)
         dst = os.path.join(HANDY_MODELS_DIR, entry)
@@ -272,7 +272,22 @@ def sync_handy_symlinks():
             except Exception as e:
                 print(f"[WARN] Failed to link {entry}: {e}")
 
-    # Also make sure root-level whisper-medium-q4_1.bin exists if nested
+    # 2. Symlink all individual .gguf and .bin weights from subdirectories
+    for root, _, files in os.walk(MODELS_DIR):
+        for f in files:
+            if f == "tokenizer.bin":
+                continue
+            if f.endswith(".gguf") or f.endswith(".bin"):
+                src = os.path.join(root, f)
+                dst = os.path.join(HANDY_MODELS_DIR, f)
+                if not os.path.exists(dst):
+                    try:
+                        os.symlink(src, dst)
+                        print(f"[SYMLINK] Linked {f} -> Handy store")
+                    except Exception as e:
+                        print(f"[WARN] Failed to link {f}: {e}")
+
+    # 3. Ensure root-level whisper-medium-q4_1.bin alias exists
     nested_bin = os.path.join(MODELS_DIR, "whisper-medium", "whisper-medium-q4_1.bin")
     root_bin = os.path.join(MODELS_DIR, "whisper-medium-q4_1.bin")
     if os.path.exists(nested_bin) and not os.path.exists(root_bin):
