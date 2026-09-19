@@ -57,6 +57,9 @@ handy -f audio.wav --model medium --device-index 1
 | **Parakeet TDT 0.6B v2** | Flagship | Q4_K_M | 454 MB | transcribe.cpp | FastConformer Non-Autoregressive |
 | **Parakeet TDT 0.6B v2** | Flagship | Q8_0 | 696 MB | transcribe.cpp | FastConformer Non-Autoregressive |
 | **Parakeet TDT 0.6B v2** | Flagship | Int8 | 631 MB | ONNX Runtime (CPU) | FastConformer Non-Autoregressive |
+| **Parakeet TDT 0.6B v3** | Multilingual | Q4_K_M | 454 MB | transcribe.cpp | FastConformer Non-Autoregressive |
+| **Parakeet TDT 0.6B v3** | Multilingual | Q8_0 | 696 MB | transcribe.cpp | FastConformer Non-Autoregressive |
+| **Parakeet TDT 0.6B v3** | Multilingual | Int8 | 639 MB | ONNX Runtime (CPU) | FastConformer Non-Autoregressive |
 | **Canary 180M Flash** | Multilingual | Q4_K_M | 133 MB | transcribe.cpp | Conformer-AED (Autoregressive) |
 | **Canary 180M Flash** | Multilingual | Q8_0 | 208 MB | transcribe.cpp | Conformer-AED (Autoregressive) |
 | **Canary 180M Flash** | Multilingual | FP32/Int8 | 204 MB | ONNX Runtime (CPU) | Conformer-AED (Autoregressive) |
@@ -67,8 +70,10 @@ handy -f audio.wav --model medium --device-index 1
 | **SenseVoice Small** | Multilingual | Q4_K_M | 139 MB | transcribe.cpp | SenseVoice Non-Autoregressive CTC |
 | **SenseVoice Small** | Multilingual | Q8_0 | 241 MB | transcribe.cpp | SenseVoice Non-Autoregressive CTC |
 | **Whisper Medium.en** | English | Q4_K_M | 481 MB | transcribe.cpp | Whisper Enc-Dec (Autoregressive) |
+| **Whisper Medium.en** | English | Q8_0 | 831 MB | transcribe.cpp | Whisper Enc-Dec (Autoregressive) |
 | **Whisper Medium** | Legacy | q4_1 | 469 MB | transcribe.cpp | Whisper Enc-Dec (Autoregressive) |
 | **Nemotron Streaming 0.6B**| Streaming | Q4_K_M | 454 MB | transcribe.cpp | FastConformer Buffered Streaming |
+| **Nemotron Streaming 0.6B**| Streaming | Q8_0 | 696 MB | transcribe.cpp | FastConformer Buffered Streaming |
 | **Moonshine V2 Medium** | Streaming | Int8 | 289 MB | ONNX Runtime (CPU) | Conformer Streaming |
 
 ---
@@ -105,6 +110,14 @@ Download the model weights into the `models/` directory:
 ```bash
 ./download_models.sh
 ```
+Or selectively download subsets:
+```bash
+./download_models.sh --list   # View complete model matrix with file sizes
+./download_models.sh --gguf   # Download only GGUF quantized models
+./download_models.sh --onnx   # Download only ONNX runtime model bundles
+./download_models.sh --bin    # Download only legacy binary models
+```
+The script automatically synchronizes symlinks with Handy's local model store (`~/.local/share/com.pais.handy/models/`).
 
 ### Step 2: Record Calibrated Audio Dataset
 ```bash

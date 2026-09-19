@@ -200,6 +200,51 @@ MODELS = [
         "path": os.path.join(MODELS_DIR, "nemotron-speech-streaming-en-0.6b/nemotron-speech-streaming-en-0.6b-Q4_K_M.gguf")
     },
     {
+        "name": "Parakeet TDT 0.6B v3",
+        "family": "FastConformer (TDT)",
+        "quant": "Q4_K_M",
+        "format": "GGUF",
+        "size_mb": 454,
+        "type": "transcribe_cli",
+        "path": os.path.join(MODELS_DIR, "parakeet-tdt-0.6b-v3/parakeet-tdt-0.6b-v3-Q4_K_M.gguf")
+    },
+    {
+        "name": "Parakeet TDT 0.6B v3",
+        "family": "FastConformer (TDT)",
+        "quant": "Q8_0",
+        "format": "GGUF",
+        "size_mb": 696,
+        "type": "transcribe_cli",
+        "path": os.path.join(MODELS_DIR, "parakeet-tdt-0.6b-v3/parakeet-tdt-0.6b-v3-Q8_0.gguf")
+    },
+    {
+        "name": "Parakeet TDT 0.6B v3",
+        "family": "FastConformer (TDT)",
+        "quant": "Int8",
+        "format": "ONNX",
+        "size_mb": 639,
+        "type": "handy",
+        "model_id": "parakeet-tdt-0.6b-v3"
+    },
+    {
+        "name": "Whisper Medium.en",
+        "family": "Whisper (Encoder-Decoder)",
+        "quant": "Q8_0",
+        "format": "GGUF",
+        "size_mb": 831,
+        "type": "transcribe_cli",
+        "path": os.path.join(MODELS_DIR, "whisper-medium.en/whisper-medium.en-Q8_0.gguf")
+    },
+    {
+        "name": "Nemotron Streaming 0.6B",
+        "family": "FastConformer (Streaming)",
+        "quant": "Q8_0",
+        "format": "GGUF",
+        "size_mb": 696,
+        "type": "transcribe_cli",
+        "path": os.path.join(MODELS_DIR, "nemotron-speech-streaming-en-0.6b/nemotron-speech-streaming-en-0.6b-Q8_0.gguf")
+    },
+    {
         "name": "Moonshine V2 Medium",
         "family": "Conformer Streaming",
         "quant": "Int8",
@@ -293,6 +338,30 @@ def run_transcribe_cli(cli_bin: str, model_path: str, wav_path: str) -> dict:
         "timing_info": timing_info
     }
 
+def check_handy_model_available(model_id: str) -> bool:
+    """Check if Handy model is available, linking it if found in project models directory."""
+    handy_dir = os.path.expanduser("~/.local/share/com.pais.handy/models")
+    if os.path.exists(os.path.join(handy_dir, model_id)):
+        return True
+
+    candidates = [
+        os.path.join(MODELS_DIR, model_id),
+        os.path.join(MODELS_DIR, f"{model_id}-int8"),
+        os.path.join(MODELS_DIR, "whisper-medium", "whisper-medium-q4_1.bin") if model_id == "medium" else None,
+        os.path.join(MODELS_DIR, "whisper-medium-q4_1.bin") if model_id == "medium" else None,
+    ]
+    for c in candidates:
+        if c and os.path.exists(c):
+            try:
+                os.makedirs(handy_dir, exist_ok=True)
+                dest = os.path.join(handy_dir, model_id)
+                if not os.path.exists(dest):
+                    os.symlink(os.path.abspath(c), dest)
+                return True
+            except Exception:
+                return True
+    return False
+
 def run_handy(model_id: str, wav_path: str) -> dict:
     """Run transcription via handy CLI on CPU (forced to CPU via device-index 1)."""
     cmd = [
@@ -350,6 +419,12 @@ def evaluate_audio_file(audio_path: str, reference_text: str, script_name: str, 
                 continue
             res = run_transcribe_cli(cli_bin, m["path"], audio_path)
         else:
+            if not shutil.which("handy"):
+                print("SKIPPED (handy binary not located)")
+                continue
+            if not check_handy_model_available(m["model_id"]):
+                print("SKIPPED (Model file missing)")
+                continue
             res = run_handy(m["model_id"], audio_path)
 
         if res["return_code"] != 0:
