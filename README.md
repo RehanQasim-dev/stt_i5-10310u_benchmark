@@ -117,15 +117,4 @@ Follow the interactive prompts to record Script A and/or Script B.
 python3 run_benchmark.py
 ```
 This executes all model configurations via Handy on CPU, measures execution latency, computes Word Error Rate (WER), and outputs Markdown and JSON reports under `logs/`.
-
 ---
-
-## 6. Empirical Preview (49.5s Technical Sample on i5-10310U)
-
-| Model | Format | Quant | Size | Latency | Speedup (xRT) | Word Accuracy |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: |
-| **SenseVoice Small** | GGUF | Q4_K_M | 139 MB | 7.13s | **7.0x** | High (Optimal for <=30s) |
-| **Parakeet TDT 0.6B v2** | GGUF | Q4_K_M | 454 MB | 10.28s | **5.0x** | **83.1%** (Best overall) |
-| **Whisper Small.en** | GGUF | Q4_K_M | 164 MB | 12.18s | **4.0x** | 76.5% |
-| **Canary 180M Flash** | GGUF | Q8_0 | 208 MB | 9.32s | **5.3x** | 80.2% |
-| **Whisper Medium.en** | GGUF | Q4_K_M | 481 MB | 50.58s | **1.0x** | **85.2%** (Highest precision) |

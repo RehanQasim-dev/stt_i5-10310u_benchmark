@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
 STT CPU Matrix Benchmark Runner
-Evaluates Q4_K_M, Q8_0, and ONNX models on Intel Core i5-10310U CPU (AVX2).
+Evaluates speech-to-text models on CPU across Q4_K_M, Q8_0, and ONNX formats.
 Supports execution via Handy CLI (forced to CPU via device-index 1 / settings) and native transcribe.cpp.
 Measures latency, Real-Time Factor (xRT), Word Error Rate (WER), and Character Error Rate (CER).
+Designed to be fully portable across any laptop or desktop system without hardcoded paths.
 """
 
 import os
@@ -12,14 +13,54 @@ import json
 import time
 import subprocess
 import argparse
+import shutil
 import re
-from difflib import SequenceMatcher
+import platform
 from datetime import datetime
 
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.join(PROJECT_DIR, "models")
 DATASET_DIR = os.path.join(PROJECT_DIR, "dataset")
-TRANSCRIBE_CLI = "/home/rehan-10xe/Documents/transcribe.cpp/build/bin/transcribe-cli"
+
+def find_transcribe_cli(explicit_path=None):
+    """Dynamically discover transcribe-cli binary across system paths and relative checkouts."""
+    if explicit_path and os.path.isfile(explicit_path) and os.access(explicit_path, os.X_OK):
+        return os.path.abspath(explicit_path)
+
+    env_path = os.environ.get("TRANSCRIBE_CLI")
+    if env_path and os.path.isfile(env_path) and os.access(env_path, os.X_OK):
+        return os.path.abspath(env_path)
+
+    which_path = shutil.which("transcribe-cli")
+    if which_path:
+        return which_path
+
+    candidates = [
+        os.path.join(PROJECT_DIR, "bin", "transcribe-cli"),
+        os.path.join(PROJECT_DIR, "..", "transcribe.cpp", "build", "bin", "transcribe-cli"),
+        os.path.join(PROJECT_DIR, "..", "..", "transcribe.cpp", "build", "bin", "transcribe-cli"),
+        os.path.expanduser("~/Documents/transcribe.cpp/build/bin/transcribe-cli"),
+        "/usr/local/bin/transcribe-cli",
+        "/usr/bin/transcribe-cli",
+    ]
+    for c in candidates:
+        if os.path.isfile(c) and os.access(c, os.X_OK):
+            return os.path.abspath(c)
+    return None
+
+def get_cpu_info():
+    """Dynamically query host CPU information for portable benchmark reporting."""
+    cpu_name = "Unknown CPU"
+    try:
+        with open("/proc/cpuinfo", "r") as f:
+            for line in f:
+                if "model name" in line:
+                    cpu_name = line.split(":", 1)[1].strip()
+                    break
+    except Exception:
+        cpu_name = platform.processor() or "Generic CPU"
+    threads = os.cpu_count() or 1
+    return f"{cpu_name} ({threads} threads)"
 
 # Model definitions for evaluation
 MODELS = [
@@ -218,10 +259,10 @@ def get_audio_duration(wav_path: str) -> float:
     except Exception:
         return 0.0
 
-def run_transcribe_cli(model_path: str, wav_path: str) -> dict:
+def run_transcribe_cli(cli_bin: str, model_path: str, wav_path: str) -> dict:
     """Run transcription via native transcribe-cli on CPU."""
     cmd = [
-        TRANSCRIBE_CLI,
+        cli_bin,
         "--backend", "cpu",
         "-m", model_path,
         wav_path
@@ -287,24 +328,27 @@ def run_handy(model_id: str, wav_path: str) -> dict:
         "error": proc.stderr if proc.returncode != 0 else None
     }
 
-def evaluate_audio_file(audio_path: str, reference_text: str, script_name: str, slice_name: str):
+def evaluate_audio_file(audio_path: str, reference_text: str, script_name: str, slice_name: str, cli_bin: str):
     """Run full model matrix against a single audio slice."""
     duration = get_audio_duration(audio_path)
     print(f"\n=======================================================")
     print(f">> Evaluating: {script_name} | Slice: {slice_name}")
-    print(f"  Audio Path: {audio_path}")
-    print(f"  Duration  : {duration:.2f}s ({duration/60:.2f} min)")
-    print(f"  Ref Words : {len(reference_text.split())} words")
+    print(f"   Audio Path: {audio_path}")
+    print(f"   Duration  : {duration:.2f}s ({duration/60:.2f} min)")
+    print(f"   Ref Words : {len(reference_text.split())} words")
     print(f"=======================================================")
 
     results = []
     for m in MODELS:
         print(f"  Testing [{m['format']} {m['quant']}] {m['name']} ({m['size_mb']}MB)... ", end="", flush=True)
         if m["type"] == "transcribe_cli":
+            if not cli_bin:
+                print("SKIPPED (transcribe-cli binary not located)")
+                continue
             if not os.path.exists(m["path"]):
                 print("SKIPPED (Model file missing)")
                 continue
-            res = run_transcribe_cli(m["path"], audio_path)
+            res = run_transcribe_cli(cli_bin, m["path"], audio_path)
         else:
             res = run_handy(m["model_id"], audio_path)
 
@@ -337,23 +381,34 @@ def evaluate_audio_file(audio_path: str, reference_text: str, script_name: str, 
     return results
 
 def main():
-    parser = argparse.ArgumentParser(description="STT CPU Matrix Benchmark on Intel i5-10310U")
+    parser = argparse.ArgumentParser(description="STT CPU Matrix Benchmark Suite")
     parser.add_argument("--script", choices=["all", "non_technical", "technical"], default="all")
     parser.add_argument("--slices", nargs="+", default=["slice_30s", "slice_60s", "slice_120s", "slice_180s"])
     parser.add_argument("--audio", help="Direct test audio wav file override")
     parser.add_argument("--ref", help="Direct reference text file override")
+    parser.add_argument("--transcribe-cli", help="Explicit path to transcribe-cli binary")
     args = parser.parse_args()
+
+    cli_bin = find_transcribe_cli(args.transcribe_cli)
+    cpu_desc = get_cpu_info()
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     out_dir = os.path.join(PROJECT_DIR, "logs", f"matrix_eval_{timestamp}")
     os.makedirs(out_dir, exist_ok=True)
+
+    print(f"=======================================================")
+    print(f" STT CPU Benchmark Runner")
+    print(f" Host CPU       : {cpu_desc}")
+    print(f" transcribe-cli : {cli_bin if cli_bin else '[Not Found - Pass via --transcribe-cli]'}")
+    print(f" Log Directory  : {out_dir}")
+    print(f"=======================================================")
 
     all_evaluations = []
 
     if args.audio and args.ref:
         with open(args.ref, "r") as f:
             ref_text = f.read().strip()
-        res = evaluate_audio_file(args.audio, ref_text, "custom_run", os.path.basename(args.audio))
+        res = evaluate_audio_file(args.audio, ref_text, "custom_run", os.path.basename(args.audio), cli_bin)
         all_evaluations.append({"script": "custom", "slice": os.path.basename(args.audio), "results": res})
     else:
         scripts = ["non_technical", "technical"] if args.script == "all" else [args.script]
@@ -370,7 +425,7 @@ def main():
                     continue
                 with open(txt_path, "r") as f:
                     ref_text = f.read().strip()
-                res = evaluate_audio_file(wav_path, ref_text, s, sl)
+                res = evaluate_audio_file(wav_path, ref_text, s, sl, cli_bin)
                 all_evaluations.append({"script": s, "slice": sl, "results": res})
 
     if not all_evaluations:
@@ -389,7 +444,7 @@ def main():
     with open(md_path, "w") as f:
         f.write("# CPU Speech-to-Text Model Matrix Benchmark Report\n\n")
         f.write(f"- **Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-        f.write(f"- **Compute Device:** Intel(R) Core(TM) i5-10310U CPU @ 1.70GHz (AVX2, 8 threads)\n")
+        f.write(f"- **Compute Device:** {cpu_desc}\n")
         f.write(f"- **Quantization Scope:** `Q4_K_M`, `Q8_0`, and `ONNX int8`\n\n")
 
         for entry in all_evaluations:
