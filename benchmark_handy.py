@@ -74,7 +74,7 @@ def record_audio(output_wav, golden_ref):
     os.system("stty sane 2>/dev/null")
 
     print("\n" + "=" * 88)
-    print("🎯 TECHNICAL GOLDEN REFERENCE (Read this aloud clearly at your natural pace):")
+    print("[TARGET] TECHNICAL GOLDEN REFERENCE (Read this aloud clearly at your natural pace):")
     print("=" * 88)
     print(f"\n\"{golden_ref}\"\n")
     print("=" * 88)
@@ -94,10 +94,10 @@ def record_audio(output_wav, golden_ref):
     # Explicitly redirect stdin to DEVNULL so ffmpeg cannot hijack keyboard input
     proc = subprocess.Popen(cmd, stdin=subprocess.DEVNULL)
     start_time = time.time()
-    print("\n🔴 RECORDING IN PROGRESS... (Speak into your microphone now)")
+    print("\n[REC] RECORDING IN PROGRESS... (Speak into your microphone now)")
     
     try:
-        wait_for_enter("👉 Press [ENTER] to STOP recording.")
+        wait_for_enter("-> Press [ENTER] to STOP recording.")
     except (KeyboardInterrupt, EOFError):
         pass
     finally:
@@ -192,7 +192,7 @@ def main():
     transcripts_dir = os.path.join(attempt_dir, "transcripts")
     os.makedirs(transcripts_dir, exist_ok=True)
 
-    print(f"\n📁 Experiment folder created: {attempt_dir}")
+    print(f"\n[DIR] Experiment folder created: {attempt_dir}")
 
     golden_ref = DEFAULT_GOLDEN_REFERENCE
     
@@ -288,7 +288,7 @@ def main():
             f"{r['rtf']:>5.1f}x RT   | "
             f"{r['word_acc']:>6.1f}%  | "
             f"{r['format_match']:>6.1f}%   | "
-            f"★ {r['suitability']:>4.1f}/100"
+            f"* {r['suitability']:>4.1f}/100"
         )
     report_lines.append("=" * 105)
 
@@ -317,7 +317,7 @@ def main():
 
     # Print Report to Terminal
     print("\n" + report_content)
-    print(f"\n✅ All artifacts preserved in: {attempt_dir}")
+    print(f"\n[OK] All artifacts preserved in: {attempt_dir}")
     print(f"   ├── audio.wav              (your voice sample)")
     print(f"   ├── reference.txt          (golden technical text)")
     print(f"   ├── report.txt             (complete comparative report)")

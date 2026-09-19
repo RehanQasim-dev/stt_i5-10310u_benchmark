@@ -291,7 +291,7 @@ def evaluate_audio_file(audio_path: str, reference_text: str, script_name: str, 
     """Run full model matrix against a single audio slice."""
     duration = get_audio_duration(audio_path)
     print(f"\n=======================================================")
-    print(f"▶ Evaluating: {script_name} | Slice: {slice_name}")
+    print(f">> Evaluating: {script_name} | Slice: {slice_name}")
     print(f"  Audio Path: {audio_path}")
     print(f"  Duration  : {duration:.2f}s ({duration/60:.2f} min)")
     print(f"  Ref Words : {len(reference_text.split())} words")
@@ -401,7 +401,7 @@ def main():
             f.write("\n")
 
     print(f"\n=======================================================")
-    print(f"✔ Benchmark complete!")
+    print(f"[OK] Benchmark complete!")
     print(f"  JSON Results : {json_path}")
     print(f"  Markdown Table: {md_path}")
     print(f"=======================================================\n")

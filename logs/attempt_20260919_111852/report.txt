@@ -5,11 +5,11 @@ Audio Duration: 49.78s | Location: /home/rehan-10xe/Documents/chats/logs/attempt
 =========================================================================================================
 Model                    | Backend | Latency   | Speed (RTF) | Word Acc  | Punct/Fmt | Suitability
 ---------------------------------------------------------------------------------------------------------
-Parakeet V2              | onnx    |  8422 ms  |   5.9x RT   |   82.7%  |   73.5%   | ★ 68.8/100
-Parakeet V3              | onnx    | 10856 ms  |   4.6x RT   |   70.4%  |   73.9%   | ★ 55.4/100
-Canary 180M Flash        | onnx    | 26795 ms  |   1.8x RT   |   63.0%  |   50.6%   | ★ 28.6/100
-Moonshine V2 Medium      | onnx    | 34322 ms  |   1.4x RT   |   55.6%  |   61.6%   | ★ 22.9/100
-Whisper Medium           | Vulkan0 | 49850 ms  |   1.0x RT   |   85.2%  |   72.8%   | ★ 17.8/100
+Parakeet V2              | onnx    |  8422 ms  |   5.9x RT   |   82.7%  |   73.5%   | * 68.8/100
+Parakeet V3              | onnx    | 10856 ms  |   4.6x RT   |   70.4%  |   73.9%   | * 55.4/100
+Canary 180M Flash        | onnx    | 26795 ms  |   1.8x RT   |   63.0%  |   50.6%   | * 28.6/100
+Moonshine V2 Medium      | onnx    | 34322 ms  |   1.4x RT   |   55.6%  |   61.6%   | * 22.9/100
+Whisper Medium           | Vulkan0 | 49850 ms  |   1.0x RT   |   85.2%  |   72.8%   | * 17.8/100
 =========================================================================================================
 
 TRANSCRIPT COMPARISON:

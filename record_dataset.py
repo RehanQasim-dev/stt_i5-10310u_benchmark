@@ -130,7 +130,7 @@ def wait_for_enter(prompt=""):
 def record_block(output_wav, label, text):
     os.system("stty sane 2>/dev/null")
     print("\n" + "=" * 90)
-    print(f"📖 {label.upper()}")
+    print(f"[SCRIPT] {label.upper()}")
     print("=" * 90)
     print(f"\n\"{text}\"\n")
     print("=" * 90)
@@ -149,10 +149,10 @@ def record_block(output_wav, label, text):
 
     proc = subprocess.Popen(cmd, stdin=subprocess.DEVNULL)
     t0 = time.time()
-    print("\n🔴 RECORDING... Speak now at your natural pace.")
+    print("\n[REC] RECORDING... Speak now at your natural pace.")
     
     try:
-        wait_for_enter("👉 Press [ENTER] to STOP recording when finished reading.")
+        wait_for_enter("-> Press [ENTER] to STOP recording when finished reading.")
     except (KeyboardInterrupt, EOFError):
         pass
     finally:
@@ -165,7 +165,7 @@ def record_block(output_wav, label, text):
         os.system("stty sane 2>/dev/null")
 
     duration = time.time() - t0
-    print(f"✅ Saved block audio: {duration:.1f}s -> {os.path.basename(output_wav)}")
+    print(f"[OK] Saved block audio: {duration:.1f}s -> {os.path.basename(output_wav)}")
     return duration
 
 def concatenate_wavs(wav_list, output_wav):
@@ -202,7 +202,7 @@ def assemble_slices(script_key, out_dir):
     ]
 
     print("\n" + "=" * 90)
-    print(f"📦 ASSEMBLING CUMULATIVE DATASET SLICES FOR: {cfg['title']}")
+    print(f"[DATASET] ASSEMBLING CUMULATIVE DATASET SLICES FOR: {cfg['title']}")
     print("=" * 90)
 
     for slice_name, block_indices in slices_def:
@@ -228,7 +228,7 @@ def assemble_slices(script_key, out_dir):
         print(f"  • {slice_name:<11} : {dur:>5.1f}s | {wc:>3} words | WAV: {os.path.basename(slice_wav)} | TXT: {os.path.basename(slice_txt)}")
 
     print("=" * 90)
-    print("✅ All slices created with 100% mathematically synchronized ground truth!")
+    print("[OK] All slices created with 100% mathematically synchronized ground truth!")
 
 def run_script_recording(script_key):
     cfg = SCRIPTS[script_key]
@@ -236,7 +236,7 @@ def run_script_recording(script_key):
     os.makedirs(out_dir, exist_ok=True)
 
     print("\n" + "=" * 90)
-    print(f"🎙️ RECORDING WORKFLOW: {cfg['title']}")
+    print(f"[MIC]️ RECORDING WORKFLOW: {cfg['title']}")
     print(f"Folder: {out_dir}")
     print("=" * 90)
 

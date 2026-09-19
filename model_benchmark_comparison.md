@@ -17,15 +17,15 @@ $$\text{RTF} = \frac{\text{Audio Duration}}{\text{Processing Time}}$$
 
 | Model | Size | Engine / Backend | Handy Claimed Accuracy | Empirical Word Accuracy | Empirical WER | Handy Claimed Speed | Empirical Speed (RTF) | Empirical Latency | Suitability Score |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Parakeet TDT-CTC 110M** | **129 MB** | TranscribeCpp (Vulkan0) | 0.85 | 61.7% | 38.3% | **0.98** | **9.5x RT** | **5.2s** | **★ 74.9 / 100** ⚡ |
-| **Parakeet V2** | 451 MB | ONNX (CPU AVX2) | **0.85** | **82.7%** | **17.3%** | 0.85 | **5.9x RT** | **8.4s** | **★ 68.8 / 100** 🥇 |
-| **Canary 180M Flash (GGUF)** | **208 MB** | TranscribeCpp (Vulkan0) | **0.88** | **80.2%** | **19.8%** | **0.98** | **5.3x RT** | **9.3s** | **★ 64.0 / 100** 🥈 |
-| **Parakeet V3** | 456 MB | ONNX (CPU AVX2) | 0.80 | 70.4% | 29.6% | 0.85 | 4.6x RT | 10.8s | ★ 55.4 / 100 |
-| **Whisper Small (English)** | **257 MB** | TranscribeCpp (Vulkan0) | 0.81 | 72.8% | 27.2% | 0.80 | 2.3x RT | 21.8s | ★ 34.6 / 100 |
-| **Canary 180M Flash (ONNX)** | 146 MB | ONNX (CPU AVX2) | 0.75 | 63.0% | 37.0% | 0.85 | 1.8x RT | 26.8s | ★ 28.6 / 100 |
-| **Moonshine V2 Med** | 192 MB | ONNX (Streaming) | 0.75 | 55.6% | 44.4% | 0.80 | 1.4x RT | 34.3s | ★ 22.9 / 100 |
-| **Whisper Medium** | 469 MB | TranscribeCpp (CPU) | 0.75 | **85.2%** | **14.8%** | 0.60 | 1.1x RT | 43.8s | ★ 20.1 / 100 |
-| **Whisper Medium** | 469 MB | TranscribeCpp (Vulkan0) | 0.75 | **85.2%** | **14.8%** | 0.60 | 1.0x RT | 49.8s | ★ 17.8 / 100 |
+| **Parakeet TDT-CTC 110M** | **129 MB** | TranscribeCpp (Vulkan0) | 0.85 | 61.7% | 38.3% | **0.98** | **9.5x RT** | **5.2s** | *** 74.9 / 100** [FAST] |
+| **Parakeet V2** | 451 MB | ONNX (CPU AVX2) | **0.85** | **82.7%** | **17.3%** | 0.85 | **5.9x RT** | **8.4s** | *** 68.8 / 100** [#1] |
+| **Canary 180M Flash (GGUF)** | **208 MB** | TranscribeCpp (Vulkan0) | **0.88** | **80.2%** | **19.8%** | **0.98** | **5.3x RT** | **9.3s** | *** 64.0 / 100** [#2] |
+| **Parakeet V3** | 456 MB | ONNX (CPU AVX2) | 0.80 | 70.4% | 29.6% | 0.85 | 4.6x RT | 10.8s | * 55.4 / 100 |
+| **Whisper Small (English)** | **257 MB** | TranscribeCpp (Vulkan0) | 0.81 | 72.8% | 27.2% | 0.80 | 2.3x RT | 21.8s | * 34.6 / 100 |
+| **Canary 180M Flash (ONNX)** | 146 MB | ONNX (CPU AVX2) | 0.75 | 63.0% | 37.0% | 0.85 | 1.8x RT | 26.8s | * 28.6 / 100 |
+| **Moonshine V2 Med** | 192 MB | ONNX (Streaming) | 0.75 | 55.6% | 44.4% | 0.80 | 1.4x RT | 34.3s | * 22.9 / 100 |
+| **Whisper Medium** | 469 MB | TranscribeCpp (CPU) | 0.75 | **85.2%** | **14.8%** | 0.60 | 1.1x RT | 43.8s | * 20.1 / 100 |
+| **Whisper Medium** | 469 MB | TranscribeCpp (Vulkan0) | 0.75 | **85.2%** | **14.8%** | 0.60 | 1.0x RT | 49.8s | * 17.8 / 100 |
 
 ---
 
@@ -38,12 +38,12 @@ How each model transcribed deep GPU microarchitecture and `llama.cpp` terms:
 | **LLM Framework** | `llama.cpp` | *"Lamador CPP"* | *"Lama.CBP"* | *"Lamardot's CVP"* |
 | **Attention Kernel** | `fused FlashAttention` | *"fused flash attention"* | *"fused flash retention"* | *"fused flash retention"* |
 | **Matrix Multiply** | `quantized GEMM` | *"quantized gem"* | *"quantized gem"* | *"quantized gem"* |
-| **Branch Divergence** | `warp divergence` | *"WARC divergence"* | *"Warp divergence"* ✅ | *"work divergence"* |
-| **Core Hardware Unit** | `Streaming Multiprocessor` | *"stream multi processor"* | *"streaming multiprocessor"* ✅ | *"stream multiprocessor"* |
-| **Memory Access** | `uncoalesced` | *"uncoalescent"* | *"uncollapsed"* | *"uncoalesced"* ✅ |
-| **Cache Behavior** | `L2 cache thrashing` | *"L2 cache thrashing"* ✅ | *"L2 cache thrashing"* ✅ | *"L two cash thrashing"* |
-| **Compute Engines** | `systolic tensor cores` | *"stolic tensor cores"* | *"systolic tensor cores"* ✅ | *(omitted)* |
-| **Execution Model** | `SIMT execution units` | *"SIMT execution units"* ✅ | *"SIE empty execution units"* | *"SIMT execution units"* ✅ |
+| **Branch Divergence** | `warp divergence` | *"WARC divergence"* | *"Warp divergence"* [OK] | *"work divergence"* |
+| **Core Hardware Unit** | `Streaming Multiprocessor` | *"stream multi processor"* | *"streaming multiprocessor"* [OK] | *"stream multiprocessor"* |
+| **Memory Access** | `uncoalesced` | *"uncoalescent"* | *"uncollapsed"* | *"uncoalesced"* [OK] |
+| **Cache Behavior** | `L2 cache thrashing` | *"L2 cache thrashing"* [OK] | *"L2 cache thrashing"* [OK] | *"L two cash thrashing"* |
+| **Compute Engines** | `systolic tensor cores` | *"stolic tensor cores"* | *"systolic tensor cores"* [OK] | *(omitted)* |
+| **Execution Model** | `SIMT execution units` | *"SIMT execution units"* [OK] | *"SIE empty execution units"* | *"SIMT execution units"* [OK] |
 
 ---
 

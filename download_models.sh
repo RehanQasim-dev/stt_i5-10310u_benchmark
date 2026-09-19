@@ -23,7 +23,7 @@ download_file() {
     local dest="$target_dir/$filename"
 
     if [ -f "$dest" ]; then
-        echo "✔ Already exists: $dest"
+        echo "[OK] Already exists: $dest"
         return 0
     fi
 
