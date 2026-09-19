@@ -1,9 +1,18 @@
 #!/usr/bin/env python3
 """
-STT CPU Matrix Benchmark Runner (Handy-Native)
+STT CPU Matrix Benchmark Runner (Handy-Native with Real-Time Logging)
 Evaluates speech-to-text models on CPU across Q8_0, Int8, and BIN formats exclusively via Handy.
 Forces CPU execution via Handy CLI (--device-index 1 / persisted settings).
 Measures latency, Real-Time Factor (RTF), Word Error Rate (WER), and accuracy.
+
+Logs are written immediately after every single model inference completes:
+- Individual model & quantization folder: logs/<run>/<Model>_<Format>_<Quant>/
+  - <dataset>_<slice>_transcript.txt (detected text)
+  - <dataset>_<slice>_reference.txt (ground-truth reference)
+  - <dataset>_<slice>_metrics.json (precision and performance numbers)
+  - results.json (cumulative results for this model)
+- Master summary: BENCHMARK_SUMMARY.md and benchmark_results.json updated in real-time.
+- Symlink: logs/latest points to the current/latest evaluation directory.
 """
 
 import os
@@ -20,6 +29,7 @@ from datetime import datetime
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.join(PROJECT_DIR, "models")
 DATASET_DIR = os.path.join(PROJECT_DIR, "dataset")
+LOGS_ROOT = os.path.join(PROJECT_DIR, "logs")
 
 def get_cpu_info():
     """Dynamically query host CPU information for portable benchmark reporting."""
@@ -118,13 +128,25 @@ def normalize_text(text: str) -> str:
     t = re.sub(r'\s+', ' ', t).strip()
     return t
 
-def calculate_wer(reference: str, hypothesis: str):
-    """Calculate Word Error Rate (WER) using Levenshtein distance."""
+def calculate_wer(reference: str, hypothesis: str) -> dict:
+    """
+    Calculate Word Error Rate (WER) and error breakdown (substitutions,
+    deletions, insertions) using Levenshtein dynamic programming.
+    """
     ref_words = normalize_text(reference).split()
     hyp_words = normalize_text(hypothesis).split()
     
     if not ref_words:
-        return 0.0, 100.0, 0, 0, len(hyp_words)
+        return {
+            "wer_pct": 0.0,
+            "accuracy_pct": 100.0,
+            "ref_words": 0,
+            "hyp_words": len(hyp_words),
+            "errors": len(hyp_words),
+            "substitutions": 0,
+            "deletions": 0,
+            "insertions": len(hyp_words)
+        }
 
     d = [[0] * (len(hyp_words) + 1) for _ in range(len(ref_words) + 1)]
     for i in range(len(ref_words) + 1):
@@ -134,10 +156,7 @@ def calculate_wer(reference: str, hypothesis: str):
 
     for i in range(1, len(ref_words) + 1):
         for j in range(1, len(hyp_words) + 1):
-            if ref_words[i - 1] == hyp_words[j - 1]:
-                cost = 0
-            else:
-                cost = 1
+            cost = 0 if ref_words[i - 1] == hyp_words[j - 1] else 1
             d[i][j] = min(
                 d[i - 1][j] + 1,        # deletion
                 d[i][j - 1] + 1,        # insertion
@@ -145,9 +164,40 @@ def calculate_wer(reference: str, hypothesis: str):
             )
 
     errors = d[len(ref_words)][len(hyp_words)]
-    wer = (errors / len(ref_words)) * 100.0
-    accuracy = max(0.0, 100.0 - wer)
-    return round(wer, 2), round(accuracy, 2), len(ref_words), len(hyp_words), errors
+    wer = round((errors / len(ref_words)) * 100.0, 2)
+    accuracy = round(max(0.0, 100.0 - wer), 2)
+
+    # Backtrack alignment to separate substitutions, deletions, and insertions
+    i = len(ref_words)
+    j = len(hyp_words)
+    subs = 0
+    dels = 0
+    ins = 0
+    while i > 0 or j > 0:
+        if i > 0 and j > 0 and d[i][j] == (d[i - 1][j - 1] + (0 if ref_words[i - 1] == hyp_words[j - 1] else 1)):
+            if ref_words[i - 1] != hyp_words[j - 1]:
+                subs += 1
+            i -= 1
+            j -= 1
+        elif i > 0 and d[i][j] == d[i - 1][j] + 1:
+            dels += 1
+            i -= 1
+        elif j > 0 and d[i][j] == d[i][j - 1] + 1:
+            ins += 1
+            j -= 1
+        else:
+            break
+
+    return {
+        "wer_pct": wer,
+        "accuracy_pct": accuracy,
+        "ref_words": len(ref_words),
+        "hyp_words": len(hyp_words),
+        "errors": errors,
+        "substitutions": subs,
+        "deletions": dels,
+        "insertions": ins
+    }
 
 def get_audio_duration(wav_path: str) -> float:
     """Get duration in seconds using ffprobe."""
@@ -224,8 +274,139 @@ def run_handy(model_id: str, wav_path: str) -> dict:
         "error": proc.stderr if proc.returncode != 0 else None
     }
 
-def evaluate_audio_file(audio_path: str, reference_text: str, script_name: str, slice_name: str):
-    """Run Handy model matrix against a single audio slice."""
+def save_model_inference_log(
+    base_log_dir: str,
+    model_info: dict,
+    dataset_name: str,
+    slice_name: str,
+    audio_path: str,
+    duration_sec: float,
+    wall_sec: float,
+    rtf_speedup: float,
+    metrics: dict,
+    reference_text: str,
+    detected_text: str
+) -> dict:
+    """
+    Write individual model logs immediately after inference finishes.
+    Creates a dedicated folder for each model and quantization scheme.
+    Writes:
+      1. <dataset>_<slice>_transcript.txt (detected text)
+      2. <dataset>_<slice>_reference.txt (ground-truth reference text)
+      3. <dataset>_<slice>_metrics.json (performance and precision numbers)
+      4. results.json (cumulative list of all slice results for this model)
+    """
+    clean_name = re.sub(r'[^a-zA-Z0-9_\-\.]', '_', model_info["name"])
+    clean_fmt = re.sub(r'[^a-zA-Z0-9_\-\.]', '_', model_info["format"])
+    clean_qnt = re.sub(r'[^a-zA-Z0-9_\-\.]', '_', model_info["quant"])
+    model_dir_name = f"{clean_name}_{clean_fmt}_{clean_qnt}"
+    model_dir = os.path.join(base_log_dir, model_dir_name)
+    os.makedirs(model_dir, exist_ok=True)
+
+    prefix = f"{dataset_name}_{slice_name}"
+
+    # 1. Write detected transcript text file
+    transcript_file = os.path.join(model_dir, f"{prefix}_transcript.txt")
+    with open(transcript_file, "w") as f:
+        f.write(detected_text + "\n")
+
+    # 2. Write ground truth reference text file
+    reference_file = os.path.join(model_dir, f"{prefix}_reference.txt")
+    with open(reference_file, "w") as f:
+        f.write(reference_text + "\n")
+
+    # 3. Write individual slice JSON metrics
+    slice_record = {
+        "model": model_info["name"],
+        "family": model_info["family"],
+        "quant": model_info["quant"],
+        "format": model_info["format"],
+        "size_mb": model_info["size_mb"],
+        "model_id": model_info.get("model_id"),
+        "dataset": dataset_name,
+        "slice": slice_name,
+        "audio_file": os.path.abspath(audio_path),
+        "duration_sec": round(duration_sec, 2),
+        "performance": {
+            "wall_sec": round(wall_sec, 2),
+            "rtf_speedup": round(rtf_speedup, 2),
+            "latency_per_sec_audio": round(wall_sec / duration_sec, 4) if duration_sec > 0 else 0.0
+        },
+        "precision": {
+            "wer_pct": metrics["wer_pct"],
+            "accuracy_pct": metrics["accuracy_pct"],
+            "ref_words": metrics["ref_words"],
+            "hyp_words": metrics["hyp_words"],
+            "errors": metrics["errors"],
+            "substitutions": metrics["substitutions"],
+            "deletions": metrics["deletions"],
+            "insertions": metrics["insertions"]
+        },
+        "transcript_path": os.path.abspath(transcript_file),
+        "reference_path": os.path.abspath(reference_file)
+    }
+
+    metrics_file = os.path.join(model_dir, f"{prefix}_metrics.json")
+    with open(metrics_file, "w") as f:
+        json.dump(slice_record, f, indent=2)
+
+    # 4. Update cumulative results.json inside this model's folder
+    cumulative_file = os.path.join(model_dir, "results.json")
+    model_history = []
+    if os.path.exists(cumulative_file):
+        try:
+            with open(cumulative_file, "r") as f:
+                model_history = json.load(f)
+        except Exception:
+            model_history = []
+    model_history = [item for item in model_history if not (item.get("dataset") == dataset_name and item.get("slice") == slice_name)]
+    model_history.append(slice_record)
+    with open(cumulative_file, "w") as f:
+        json.dump(model_history, f, indent=2)
+
+    return slice_record
+
+def update_master_summary(base_log_dir: str, cpu_desc: str, all_evaluations: list):
+    """
+    Refresh master summary files immediately after each inference finishes
+    so partial runs are never lost.
+    """
+    # 1. Update master benchmark_results.json
+    json_path = os.path.join(base_log_dir, "benchmark_results.json")
+    with open(json_path, "w") as f:
+        json.dump({
+            "last_updated": datetime.now().isoformat(),
+            "cpu": cpu_desc,
+            "engine": "Handy CLI (CPU AVX2 SIMD)",
+            "evaluations": all_evaluations
+        }, f, indent=2)
+
+    # 2. Update master BENCHMARK_SUMMARY.md
+    md_path = os.path.join(base_log_dir, "BENCHMARK_SUMMARY.md")
+    with open(md_path, "w") as f:
+        f.write("# Speech-to-Text Benchmark Results (Intel CPU)\n\n")
+        f.write(f"- **CPU:** {cpu_desc}\n")
+        f.write(f"- **Execution Engine:** Handy CLI (CPU AVX2 SIMD)\n")
+        f.write(f"- **Last Updated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+
+        for ev in all_evaluations:
+            f.write(f"### Dataset: {ev['script']} | Slice: {ev['slice']}\n\n")
+            f.write("| Model | Format / Quant | Size | Latency (s) | Speedup (xRT) | WER (%) | Accuracy (%) |\n")
+            f.write("| :--- | :---: | :---: | :---: | :---: | :---: | :---: |\n")
+            for r in ev["results"]:
+                f.write(f"| **{r['model']}** | {r['format']} {r['quant']} | {r['size_mb']} MB | {r['wall_sec']}s | {r['rtf_speedup']}x | {r['wer']}% | {r['accuracy']}% |\n")
+            f.write("\n")
+
+def evaluate_audio_file(
+    audio_path: str,
+    reference_text: str,
+    script_name: str,
+    slice_name: str,
+    base_log_dir: str,
+    cpu_desc: str,
+    all_evaluations: list
+) -> list:
+    """Run Handy model matrix against a single audio slice, saving logs after each model."""
     duration = get_audio_duration(audio_path)
     print(f"\n=======================================================")
     print(f">> Evaluating: {script_name} | Slice: {slice_name}")
@@ -234,7 +415,19 @@ def evaluate_audio_file(audio_path: str, reference_text: str, script_name: str, 
     print(f"   Ref Words : {len(reference_text.split())} words")
     print(f"=======================================================")
 
-    results = []
+    current_slice_results = []
+    # Create or find entry in all_evaluations
+    ev_entry = None
+    for ev in all_evaluations:
+        if ev["script"] == script_name and ev["slice"] == slice_name:
+            ev_entry = ev
+            break
+    if not ev_entry:
+        ev_entry = {"script": script_name, "slice": slice_name, "results": current_slice_results}
+        all_evaluations.append(ev_entry)
+    else:
+        current_slice_results = ev_entry["results"]
+
     for m in MODELS:
         print(f"  Testing [{m['format']} {m['quant']}] {m['name']} ({m['size_mb']}MB)... ", end="", flush=True)
         if not shutil.which("handy"):
@@ -253,10 +446,24 @@ def evaluate_audio_file(audio_path: str, reference_text: str, script_name: str, 
         hyp_text = res["text"]
         wall_sec = res["wall_sec"]
         rtf = round(duration / wall_sec, 2) if wall_sec > 0 else 0.0
-        wer, acc, ref_w, hyp_w, errs = calculate_wer(reference_text, hyp_text)
+        metrics = calculate_wer(reference_text, hyp_text)
 
-        print(f"DONE in {wall_sec}s ({rtf}x RT) | WER: {wer}% (Acc: {acc}%)")
-        results.append({
+        # WRITE LOGS IMMEDIATELY AFTER THIS MODEL INFERENCE
+        slice_record = save_model_inference_log(
+            base_log_dir=base_log_dir,
+            model_info=m,
+            dataset_name=script_name,
+            slice_name=slice_name,
+            audio_path=audio_path,
+            duration_sec=duration,
+            wall_sec=wall_sec,
+            rtf_speedup=rtf,
+            metrics=metrics,
+            reference_text=reference_text,
+            detected_text=hyp_text
+        )
+
+        model_summary_entry = {
             "model": m["name"],
             "family": m["family"],
             "quant": m["quant"],
@@ -265,17 +472,24 @@ def evaluate_audio_file(audio_path: str, reference_text: str, script_name: str, 
             "duration_sec": round(duration, 2),
             "wall_sec": wall_sec,
             "rtf_speedup": rtf,
-            "wer": wer,
-            "accuracy": acc,
-            "errors": errs,
-            "ref_words": ref_w,
-            "hyp_words": hyp_w,
+            "wer": metrics["wer_pct"],
+            "accuracy": metrics["accuracy_pct"],
+            "errors": metrics["errors"],
+            "ref_words": metrics["ref_words"],
+            "hyp_words": metrics["hyp_words"],
             "transcript": hyp_text
-        })
-    return results
+        }
+        current_slice_results.append(model_summary_entry)
+
+        # Update master summary files immediately
+        update_master_summary(base_log_dir, cpu_desc, all_evaluations)
+
+        print(f"DONE in {wall_sec}s ({rtf}x RT) | WER: {metrics['wer_pct']}% (Acc: {metrics['accuracy_pct']}%) [Logged]")
+
+    return current_slice_results
 
 def main():
-    parser = argparse.ArgumentParser(description="STT CPU Matrix Benchmark Suite (Handy-Only)")
+    parser = argparse.ArgumentParser(description="STT CPU Matrix Benchmark Suite (Handy-Only, Real-Time Logging)")
     parser.add_argument("--script", choices=["all", "non_technical", "technical"], default="all")
     parser.add_argument("--slices", nargs="+", default=["slice_30s", "slice_60s", "slice_120s", "slice_180s"])
     parser.add_argument("--audio", help="Direct test audio wav file override")
@@ -289,14 +503,24 @@ def main():
 
     cpu_desc = get_cpu_info()
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    out_dir = os.path.join(PROJECT_DIR, "logs", f"matrix_eval_{timestamp}")
+    out_dir = os.path.join(LOGS_ROOT, f"matrix_eval_{timestamp}")
     os.makedirs(out_dir, exist_ok=True)
+
+    # Point logs/latest to this evaluation run directory
+    latest_symlink = os.path.join(LOGS_ROOT, "latest")
+    try:
+        if os.path.islink(latest_symlink) or os.path.exists(latest_symlink):
+            os.remove(latest_symlink)
+        os.symlink(os.path.abspath(out_dir), latest_symlink)
+    except Exception:
+        pass
 
     print(f"=======================================================")
     print(f" STT CPU Benchmark Runner (Handy-Only)")
     print(f" Host CPU       : {cpu_desc}")
     print(f" Engine         : Handy CLI ({shutil.which('handy')})")
     print(f" Log Directory  : {out_dir}")
+    print(f" Latest Symlink : {latest_symlink}")
     print(f"=======================================================")
 
     all_evaluations = []
@@ -304,8 +528,10 @@ def main():
     if args.audio and args.ref:
         with open(args.ref, "r") as f:
             ref_text = f.read().strip()
-        res = evaluate_audio_file(args.audio, ref_text, "custom_run", os.path.basename(args.audio))
-        all_evaluations.append({"script": "custom", "slice": os.path.basename(args.audio), "results": res})
+        evaluate_audio_file(
+            args.audio, ref_text, "custom_run", os.path.basename(args.audio),
+            out_dir, cpu_desc, all_evaluations
+        )
     else:
         scripts = ["non_technical", "technical"] if args.script == "all" else [args.script]
         for s in scripts:
@@ -321,43 +547,24 @@ def main():
                     continue
                 with open(txt_path, "r") as f:
                     ref_text = f.read().strip()
-                res = evaluate_audio_file(wav_path, ref_text, s, sl)
-                all_evaluations.append({"script": s, "slice": sl, "results": res})
+                evaluate_audio_file(
+                    wav_path, ref_text, s, sl,
+                    out_dir, cpu_desc, all_evaluations
+                )
 
     if not all_evaluations:
         print("\nNo benchmarks executed. Please record the audio dataset first:")
         print("    python3 record_dataset.py")
         sys.exit(0)
 
-    # Save complete JSON results
-    json_path = os.path.join(out_dir, "benchmark_results.json")
-    with open(json_path, "w") as f:
-        json.dump({
-            "timestamp": timestamp,
-            "cpu": cpu_desc,
-            "evaluations": all_evaluations
-        }, f, indent=2)
-
-    # Generate Markdown Summary Report
     md_path = os.path.join(out_dir, "BENCHMARK_SUMMARY.md")
-    with open(md_path, "w") as f:
-        f.write(f"# Speech-to-Text Benchmark Results (Intel CPU)\n\n")
-        f.write(f"- **CPU:** {cpu_desc}\n")
-        f.write(f"- **Execution Engine:** Handy CLI (CPU AVX2 SIMD)\n")
-        f.write(f"- **Date:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-
-        for ev in all_evaluations:
-            f.write(f"### Dataset: {ev['script']} | Slice: {ev['slice']}\n\n")
-            f.write("| Model | Format / Quant | Size | Latency (s) | Speedup (xRT) | WER (%) | Accuracy (%) |\n")
-            f.write("| :--- | :---: | :---: | :---: | :---: | :---: | :---: |\n")
-            for r in ev["results"]:
-                f.write(f"| **{r['model']}** | {r['format']} {r['quant']} | {r['size_mb']} MB | {r['wall_sec']}s | {r['rtf_speedup']}x | {r['wer']}% | {r['accuracy']}% |\n")
-            f.write("\n")
+    json_path = os.path.join(out_dir, "benchmark_results.json")
 
     print(f"\n=======================================================")
     print(f">> Benchmark complete!")
     print(f"   Summary Report: {md_path}")
     print(f"   Raw JSON Data : {json_path}")
+    print(f"   Per-Model Logs: {out_dir}/<Model>_<Format>_<Quant>/")
     print(f"=======================================================\n")
 
 if __name__ == "__main__":
