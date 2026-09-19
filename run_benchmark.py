@@ -46,6 +46,7 @@ def get_cpu_info():
     return f"{cpu_name} ({threads} threads)"
 
 # Evaluated models via Handy execution engine (All 20 available model & quant configurations)
+# Mapped directly to local weights in the project's models/ directory
 MODELS = [
     # Parakeet TDT 0.6B v2 (Flagship English)
     {
@@ -54,6 +55,7 @@ MODELS = [
         "quant": "Q4_K_M",
         "format": "GGUF",
         "size_mb": 453,
+        "file_path": "models/parakeet-tdt-0.6b-v2/parakeet-tdt-0.6b-v2-Q4_K_M.gguf",
         "model_id": "handy-computer/parakeet-tdt-0.6b-v2-gguf/parakeet-tdt-0.6b-v2-Q4_K_M.gguf"
     },
     {
@@ -62,6 +64,7 @@ MODELS = [
         "quant": "Q8_0",
         "format": "GGUF",
         "size_mb": 695,
+        "file_path": "models/parakeet-tdt-0.6b-v2/parakeet-tdt-0.6b-v2-Q8_0.gguf",
         "model_id": "handy-computer/parakeet-tdt-0.6b-v2-gguf/parakeet-tdt-0.6b-v2-Q8_0.gguf"
     },
     {
@@ -70,6 +73,7 @@ MODELS = [
         "quant": "Int8",
         "format": "ONNX",
         "size_mb": 451,
+        "file_path": "models/parakeet-tdt-0.6b-v2-int8",
         "model_id": "parakeet-tdt-0.6b-v2"
     },
     # Parakeet TDT 0.6B v3 (Multilingual)
@@ -79,6 +83,7 @@ MODELS = [
         "quant": "Q4_K_M",
         "format": "GGUF",
         "size_mb": 462,
+        "file_path": "models/parakeet-tdt-0.6b-v3/parakeet-tdt-0.6b-v3-Q4_K_M.gguf",
         "model_id": "handy-computer/parakeet-tdt-0.6b-v3-gguf/parakeet-tdt-0.6b-v3-Q4_K_M.gguf"
     },
     {
@@ -87,6 +92,7 @@ MODELS = [
         "quant": "Q8_0",
         "format": "GGUF",
         "size_mb": 705,
+        "file_path": "models/parakeet-tdt-0.6b-v3/parakeet-tdt-0.6b-v3-Q8_0.gguf",
         "model_id": "handy-computer/parakeet-tdt-0.6b-v3-gguf/parakeet-tdt-0.6b-v3-Q8_0.gguf"
     },
     {
@@ -95,6 +101,7 @@ MODELS = [
         "quant": "Int8",
         "format": "ONNX",
         "size_mb": 456,
+        "file_path": "models/parakeet-tdt-0.6b-v3-int8",
         "model_id": "parakeet-tdt-0.6b-v3"
     },
     # Canary 180M Flash
@@ -104,6 +111,7 @@ MODELS = [
         "quant": "Q4_K_M",
         "format": "GGUF",
         "size_mb": 132,
+        "file_path": "models/canary-180m-flash/canary-180m-flash-Q4_K_M.gguf",
         "model_id": "handy-computer/canary-180m-flash-gguf/canary-180m-flash-Q4_K_M.gguf"
     },
     {
@@ -112,6 +120,7 @@ MODELS = [
         "quant": "Q8_0",
         "format": "GGUF",
         "size_mb": 208,
+        "file_path": "models/canary-180m-flash/canary-180m-flash-Q8_0.gguf",
         "model_id": "handy-computer/canary-180m-flash-gguf/canary-180m-flash-Q8_0.gguf"
     },
     {
@@ -120,6 +129,7 @@ MODELS = [
         "quant": "FP32/Int8",
         "format": "ONNX",
         "size_mb": 146,
+        "file_path": "models/canary-180m-flash",
         "model_id": "canary-180m-flash"
     },
     # Parakeet TDT CTC 110M
@@ -129,6 +139,7 @@ MODELS = [
         "quant": "Q4_K_M",
         "format": "GGUF",
         "size_mb": 85,
+        "file_path": "models/parakeet-tdt_ctc-110m/parakeet-tdt_ctc-110m-Q4_K_M.gguf",
         "model_id": "handy-computer/parakeet-tdt_ctc-110m-gguf/parakeet-tdt_ctc-110m-Q4_K_M.gguf"
     },
     {
@@ -137,6 +148,7 @@ MODELS = [
         "quant": "Q8_0",
         "format": "GGUF",
         "size_mb": 129,
+        "file_path": "models/parakeet-tdt_ctc-110m/parakeet-tdt_ctc-110m-Q8_0.gguf",
         "model_id": "handy-computer/parakeet-tdt_ctc-110m-gguf/parakeet-tdt_ctc-110m-Q8_0.gguf"
     },
     # SenseVoice Small
@@ -146,6 +158,7 @@ MODELS = [
         "quant": "Q4_K_M",
         "format": "GGUF",
         "size_mb": 138,
+        "file_path": "models/SenseVoiceSmall/SenseVoiceSmall-Q4_K_M.gguf",
         "model_id": "handy-computer/SenseVoiceSmall-gguf/SenseVoiceSmall-Q4_K_M.gguf"
     },
     {
@@ -154,6 +167,7 @@ MODELS = [
         "quant": "Q8_0",
         "format": "GGUF",
         "size_mb": 240,
+        "file_path": "models/SenseVoiceSmall/SenseVoiceSmall-Q8_0.gguf",
         "model_id": "handy-computer/SenseVoiceSmall-gguf/SenseVoiceSmall-Q8_0.gguf"
     },
     # Whisper Small.en
@@ -163,6 +177,7 @@ MODELS = [
         "quant": "Q4_K_M",
         "format": "GGUF",
         "size_mb": 163,
+        "file_path": "models/whisper-small.en/whisper-small.en-Q4_K_M.gguf",
         "model_id": "handy-computer/whisper-small.en-gguf/whisper-small.en-Q4_K_M.gguf"
     },
     {
@@ -171,6 +186,7 @@ MODELS = [
         "quant": "Q8_0",
         "format": "GGUF",
         "size_mb": 257,
+        "file_path": "models/whisper-small.en/whisper-small.en-Q8_0.gguf",
         "model_id": "handy-computer/whisper-small.en-gguf/whisper-small.en-Q8_0.gguf"
     },
     # Whisper Medium
@@ -180,6 +196,7 @@ MODELS = [
         "quant": "Q4_K_M",
         "format": "GGUF",
         "size_mb": 480,
+        "file_path": "models/whisper-medium.en/whisper-medium.en-Q4_K_M.gguf",
         "model_id": "handy-computer/whisper-medium.en-gguf/whisper-medium.en-Q4_K_M.gguf"
     },
     {
@@ -188,6 +205,7 @@ MODELS = [
         "quant": "Q4_1",
         "format": "BIN",
         "size_mb": 469,
+        "file_path": "models/whisper-medium/whisper-medium-q4_1.bin",
         "model_id": "medium"
     },
     # Whisper Base.en
@@ -197,6 +215,7 @@ MODELS = [
         "quant": "FP16/FP32",
         "format": "BIN",
         "size_mb": 141,
+        "file_path": "models/whisper-base.en/ggml-base.en.bin",
         "model_id": "ggml-base.en"
     },
     # Nemotron Streaming 0.6B
@@ -206,6 +225,7 @@ MODELS = [
         "quant": "Q4_K_M",
         "format": "GGUF",
         "size_mb": 453,
+        "file_path": "models/nemotron-speech-streaming-en-0.6b/nemotron-speech-streaming-en-0.6b-Q4_K_M.gguf",
         "model_id": "handy-computer/nemotron-speech-streaming-en-0.6b-gguf/nemotron-speech-streaming-en-0.6b-Q4_K_M.gguf"
     },
     # Moonshine V2 Medium
@@ -215,6 +235,7 @@ MODELS = [
         "quant": "Int8",
         "format": "ONNX",
         "size_mb": 192,
+        "file_path": "models/moonshine-medium-streaming-en",
         "model_id": "moonshine-medium-streaming-en"
     }
 ]
@@ -349,34 +370,23 @@ def sync_handy_symlinks():
             os.makedirs(os.path.dirname(nested_bin), exist_ok=True)
             os.symlink(root_bin, nested_bin)
 
-def check_handy_model_available(model_id: str) -> bool:
-    """Check if Handy model is available, linking it if found in project models directory."""
+def check_model_available(m: dict) -> bool:
+    """Verifies that the model weights are physically present in the project's models/ directory."""
+    local_path = os.path.join(PROJECT_DIR, m["file_path"])
+    if not os.path.exists(local_path):
+        return False
+
+    # Ensure Handy's data directory recognizes the model
     handy_dir = os.path.expanduser("~/.local/share/com.pais.handy/models")
-    if os.path.exists(os.path.join(handy_dir, model_id)):
-        return True
-
-    # Extract base filename if model_id is a HuggingFace hub path
-    base_file = os.path.basename(model_id)
-    if os.path.exists(os.path.join(handy_dir, base_file)):
-        return True
-
-    candidates = [
-        os.path.join(MODELS_DIR, model_id),
-        os.path.join(MODELS_DIR, f"{model_id}-int8"),
-        os.path.join(MODELS_DIR, "whisper-medium", "whisper-medium-q4_1.bin") if model_id == "medium" else None,
-        os.path.join(MODELS_DIR, "whisper-medium-q4_1.bin") if model_id == "medium" else None,
-    ]
-    for c in candidates:
-        if c and os.path.exists(c):
-            try:
-                os.makedirs(handy_dir, exist_ok=True)
-                dest = os.path.join(handy_dir, model_id)
-                if not os.path.exists(dest):
-                    os.symlink(os.path.abspath(c), dest)
-                return True
-            except Exception:
-                return True
-    return False
+    os.makedirs(handy_dir, exist_ok=True)
+    fname = os.path.basename(local_path)
+    dest = os.path.join(handy_dir, fname)
+    if not os.path.exists(dest):
+        try:
+            os.symlink(os.path.abspath(local_path), dest)
+        except Exception:
+            pass
+    return True
 
 def run_handy(model_id: str, wav_path: str) -> dict:
     """Run transcription via handy CLI on CPU (forced to CPU via device-index 1)."""
@@ -578,8 +588,8 @@ def evaluate_audio_file(
         if not shutil.which("handy"):
             print("SKIPPED (handy binary not located)")
             continue
-        if not check_handy_model_available(m["model_id"]):
-            print("SKIPPED (Model not installed in Handy)")
+        if not check_model_available(m):
+            print(f"SKIPPED (Missing local weights: {m['file_path']})")
             continue
 
         res = run_handy(m["model_id"], audio_path)
