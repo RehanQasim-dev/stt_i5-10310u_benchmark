@@ -1,7 +1,0 @@
-Model: Parakeet V2
-Model ID: parakeet-tdt-0.6b-v2
-Backend: onnx
-Latency: 8422 ms
-Speed (RTF): 5.88x
---------------------------------------------------
-We are profiling Lamador CPP kernel execution to diagnose microarchitectural bottlenecks across different GPU architectures when evaluating fused flash attention and quantized gem kernels. WARC divergence and shared memory bank conflicts can degrade compute throughput. Does the register file pressure per stream multi processor limit theoretical occupancy during KV cache attention tiling? Let's analyze whether uncoalescent global memory transactions or L2 cache thrashing codes pipeline stalls on the memory controller and measure the roofline and automatic intensity across stolic tensor cores and SIMT execution units.

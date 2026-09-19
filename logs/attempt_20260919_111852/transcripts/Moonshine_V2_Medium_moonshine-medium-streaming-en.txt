@@ -1,7 +1,0 @@
-Model: Moonshine V2 Medium
-Model ID: moonshine-medium-streaming-en
-Backend: onnx
-Latency: 34322 ms
-Speed (RTF): 1.44x
---------------------------------------------------
-We are profiling Lamar or CPP kernel execution to diagnose micro architectural bottlenecks across different GPR structures when evaluating fused flash retention and quantized gem kundals. WARP divergence and shared memory bend conflicts can degrade compute throughput. Does the justified pressure on streaming multi processor limit? theoretical occupancy during KV cache attention tiling let's analyze whether on coalesced global memory transaction or L2 cache thrashing course pipeline stalls on the memory

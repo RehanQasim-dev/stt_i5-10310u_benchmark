@@ -17,9 +17,9 @@ models/**/*.ort
 *.aria2
 *.incomplete
 
-# Local audio datasets & test recordings
-dataset/**/*.wav
-logs/**/*.wav
+# Local audio datasets, recordings, and benchmark logs
+dataset/
+logs/
 *.wav
 
 # System and logs

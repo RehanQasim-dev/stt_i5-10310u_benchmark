@@ -1,7 +1,0 @@
-Model: Parakeet V3
-Model ID: parakeet-tdt-0.6b-v3
-Backend: onnx
-Latency: 10856 ms
-Speed (RTF): 4.56x
---------------------------------------------------
-We are profiling lama.cbp kernel execution to diagnose micro architectural bottlenecks across different GPU architectures when evaluating fused flash attention and quantized gem cards work divergence and share memory bank conflicts can degrad compute throughput does the register file pressure for string multi processor limit theoretical occupancy during KV cache attention tiling let's analyze whether uncle as the global memory transaction or L2 cache thrashing calls pipeline stores on the memory controller and measure the roofline arithmetic intensity across the story transfer cores and SIMP execution units

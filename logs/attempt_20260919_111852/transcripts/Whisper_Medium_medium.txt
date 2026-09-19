@@ -1,7 +1,0 @@
-Model: Whisper Medium
-Model ID: medium
-Backend: Vulkan0
-Latency: 49850 ms
-Speed (RTF): 0.99x
---------------------------------------------------
-We are profiling Lama.CBP kernel execution to diagnose micro architectural bottlenecks across different GPU architectures when evaluating fused flash retention and quantized gem kernels. Warp divergence and share memory bank conflicts can degrade compute throughput. Does the registrophile pressure per streaming multiprocessor limit theoretical occupancy during KV cache attention tiling. Let's analyze whether uncollapsed global memory transactions or L2 cache thrashing cause pipeline stalls on the memory controller and measure the roofline arithmetic intensity across systolic tensor cores and SIE empty execution units.

@@ -1,7 +1,0 @@
-Model: Canary 180M Flash
-Model ID: canary-180m-flash
-Backend: onnx
-Latency: 26795 ms
-Speed (RTF): 1.85x
---------------------------------------------------
-We are profiling Lamardot's CVP kernel execution to diagnose microarchitectural bottlenecks across different GPU architectures when evaluating fused flash retention and quantized gem kernels, work divergence and share memory bank conflicts can degrade compute throughput. Does the register file breaker per stream multiprocessor limit theoretical occupancy during KVCA attention tiling? Let's analyze whether uncoalesced global memory transactions or L two cash thrashing cores and SIMT execution units.
