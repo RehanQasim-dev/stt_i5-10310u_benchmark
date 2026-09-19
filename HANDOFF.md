@@ -29,10 +29,10 @@ Handy has been explicitly configured to prioritize CPU:
 | `download_models.py` | Automated model downloader. Fetches all benchmark models (GGUF Q4_K_M & Q8_0, ONNX bundles, GGML BIN) directly into `./models` with no flags or settings needed. Auto-symlinks into Handy store. |
 | `download_models.sh` | Shell-based alternative model downloader. Supports `--all`, `--gguf`, `--onnx`, `--bin`, `--list`, and `--sync`. |
 | `record_dataset.py` | Interactive cumulative calibration recorder. Records 4 natural speech blocks and losslessly concatenates them into `slice_30s`, `slice_60s`, `slice_120s`, and `slice_180s` with exact reference text files. |
-| `run_benchmark.py` | Automated benchmarking harness. Dynamically detects CPU specs via `/proc/cpuinfo`, dynamically locates `transcribe-cli`, checks and auto-links Handy models, computes Word Error Rate (WER) and Real-Time Factor (RTF), and formats markdown/JSON reports. |
+| `run_benchmark.py` | Automated benchmarking harness (Handy-only). Features Levenshtein error breakdown, real-time per-model logging into `logs/latest/<Model>_<Format>_<Quant>/`, dynamic `BENCHMARK_SUMMARY.md` updates after every single inference, and automated symlink maintenance. |
 | `README.md` | Comprehensive user guide, architecture documentation, model matrix, and quickstart instructions (zero emojis, no hardcoded paths). |
 | `.gitignore` | Excludes all heavy binary weights (`*.gguf`, `*.bin`, `*.onnx`, `*.ort`, `*.tar.gz`), audio recordings (`*.wav`, `dataset/`), and output run logs (`logs/`). |
-| `models/` | Local storage directory for all downloaded models. Symlinked backward-compatibly with `~/.local/share/com.pais.handy/models/` and `~/Documents/transcribe.cpp/models/` consuming 0 extra disk space. |
+| `models/` | Local storage directory for all downloaded models (6.9 GB ready-to-run). Physical source of truth cut/moved from external caches, symlinked into `~/.local/share/com.pais.handy/models/`. |
 
 ---
 
@@ -55,25 +55,33 @@ Handy has been explicitly configured to prioritize CPU:
 
 ## 5. Immediate Next Steps for Next Session
 
-1. **Record the Audio Dataset:**
-   Run the interactive recorder to generate deterministic audio slices:
+1. **Record the Final Audio Dataset:**
+   When ready to record your real dataset, run the interactive recorder:
    ```bash
    python3 record_dataset.py
    ```
-   Follow the prompts to record either Script A (everyday speech) or Script B (technical compiler/SIMD text). The script will output sliced files to `dataset/` along with matching reference `.txt` files.
+   Follow the prompts to record Script A (everyday narrative) and/or Script B (technical compiler/SIMD text). The script automatically outputs `slice_30s`, `slice_60s`, `slice_120s`, and `slice_180s` along with exact matching reference text files.
 
-2. **Execute the Benchmark Matrix:**
-   Once audio slices are present in `dataset/`, run the benchmark:
+2. **Execute the Full Benchmark Matrix:**
+   Once your audio slices are recorded:
    ```bash
-   python3 run_benchmark.py
+   python3 run_benchmark.py --script all
    ```
-   The harness will execute each model against each slice, measure wall-clock latency, calculate RTF and WER, and emit JSON and markdown logs under `logs/`.
+   Or evaluate a specific domain/slice:
+   ```bash
+   python3 run_benchmark.py --script non_technical --slices slice_30s slice_60s slice_120s slice_180s
+   ```
+   As each model finishes inference, the harness immediately writes:
+   - `logs/latest/<Model>_<Format>_<Quant>/<dataset>_<slice>_transcript.txt`
+   - `logs/latest/<Model>_<Format>_<Quant>/<dataset>_<slice>_reference.txt`
+   - `logs/latest/<Model>_<Format>_<Quant>/<dataset>_<slice>_metrics.json` (WER, accuracy, substitutions, deletions, insertions, latency, RTF)
+   - `logs/latest/<Model>_<Format>_<Quant>/results.json`
+   - Live updates to `logs/latest/BENCHMARK_SUMMARY.md` and `logs/latest/benchmark_results.json`
 
-3. **Generate Empirical Markdown Report:**
-   After benchmarking completes:
-   - Extract the generated summary table from `logs/`.
-   - Create a dedicated markdown file (e.g., `BENCHMARK_RESULTS.md`) in the repository documenting the actual latency, RTF, and accuracy numbers across Q4_K_M vs Q8_0 vs ONNX Int8.
-   - Commit and push `BENCHMARK_RESULTS.md` to GitHub.
+3. **Verification Status:**
+   - The end-to-end pipeline was rigorously tested on a sample recording across all 9 models.
+   - All 9 models executed without errors, exits, or missing dependencies.
+   - Real-time incremental file writes, Levenshtein error breakdowns, and report formatting were 100% verified.
 
 ---
 
