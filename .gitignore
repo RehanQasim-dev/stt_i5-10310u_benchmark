@@ -16,6 +16,7 @@ models/**/*.ort
 *.tar.gz
 *.aria2
 *.incomplete
+*.part
 
 # Local audio datasets, recordings, and benchmark logs
 dataset/

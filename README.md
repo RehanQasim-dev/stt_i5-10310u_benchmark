@@ -17,6 +17,22 @@ Handy acts as the unified STT execution engine, managing two distinct runtime ba
 1. **transcribe.cpp (GGML C++):** Used automatically for all `.gguf` and legacy `.bin` models (Parakeet, Canary, Whisper, SenseVoice, Nemotron).
 2. **ONNX Runtime (CPU):** Used automatically for directory-based `.onnx` models (Parakeet V2/V3 int8, Canary 180M, Moonshine Streaming).
 
+### Prerequisites: Install Handy First
+Before running any part of this benchmark, **Handy must be installed on your system**. Handy serves as the core runtime engine that executes transcription models across both GGML C++ and ONNX backends.
+
+#### Installing Handy
+Handy can be installed on Linux via GitHub release packages:
+```bash
+# Example: Download and install the latest .deb package on Debian/Ubuntu
+wget https://github.com/cjpais/handy/releases/latest/download/handy_amd64.deb
+sudo dpkg -i handy_amd64.deb
+```
+Verify the installation:
+```bash
+which handy
+handy --help
+```
+
 ---
 
 ## 2. Configuring Handy to Use CPU
@@ -105,27 +121,38 @@ Two scripts are provided:
 
 ## 5. Quickstart
 
-### Step 1: Download Model Weights
-Download the model weights into the `models/` directory:
+### Step 1: Install Handy First
+Ensure Handy is installed on the machine and available in PATH:
 ```bash
-./download_models.sh
+which handy
 ```
-Or selectively download subsets:
-```bash
-./download_models.sh --list   # View complete model matrix with file sizes
-./download_models.sh --gguf   # Download only GGUF quantized models
-./download_models.sh --onnx   # Download only ONNX runtime model bundles
-./download_models.sh --bin    # Download only legacy binary models
-```
-The script automatically synchronizes symlinks with Handy's local model store (`~/.local/share/com.pais.handy/models/`).
+If not installed, install it via the latest GitHub release package as described in [Prerequisites](#prerequisites-install-handy-first).
 
-### Step 2: Record Calibrated Audio Dataset
+### Step 2: Configure Handy for CPU
+Ensure Handy is set to execute on the CPU AVX2 SIMD backend rather than slow integrated GPU shaders:
+```bash
+sed -i 's/"transcribe_accelerator": "auto"/"transcribe_accelerator": "cpu"/' ~/.local/share/com.pais.handy/settings_store.json
+```
+
+### Step 3: Download Model Weights
+Run the automated Python downloader to download all models directly into the project's `models/` directory. No arguments or custom settings are needed:
+```bash
+python3 download_models.py
+```
+This script handles everything automatically:
+- Downloads all GGUF quantized models (Q4_K_M and Q8_0) into `models/<model-name>/`.
+- Unpacks all ONNX CPU runtime bundles into `models/`.
+- Downloads legacy binary model weights (`whisper-medium-q4_1.bin`).
+- Automatically skips any weights that already exist locally.
+- Synchronizes symlinks with Handy's store (`~/.local/share/com.pais.handy/models/`), consuming zero extra disk space.
+
+### Step 4: Record Calibrated Audio Dataset
 ```bash
 python3 record_dataset.py
 ```
 Follow the interactive prompts to record Script A and/or Script B.
 
-### Step 3: Run the Benchmark
+### Step 5: Run the Benchmark
 ```bash
 python3 run_benchmark.py
 ```

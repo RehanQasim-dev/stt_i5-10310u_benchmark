@@ -26,7 +26,8 @@ Handy has been explicitly configured to prioritize CPU:
 
 | File / Directory | Purpose & Status |
 | :--- | :--- |
-| `download_models.sh` | Automated model downloader. Supports `--all`, `--gguf`, `--onnx`, `--bin`, `--list`, and `--sync`. Sets `curl` user-agent to bypass CDN 403 blocks and strips macOS `._*` metadata. Auto-symlinks downloaded models into Handy. |
+| `download_models.py` | Automated model downloader. Fetches all benchmark models (GGUF Q4_K_M & Q8_0, ONNX bundles, GGML BIN) directly into `./models` with no flags or settings needed. Auto-symlinks into Handy store. |
+| `download_models.sh` | Shell-based alternative model downloader. Supports `--all`, `--gguf`, `--onnx`, `--bin`, `--list`, and `--sync`. |
 | `record_dataset.py` | Interactive cumulative calibration recorder. Records 4 natural speech blocks and losslessly concatenates them into `slice_30s`, `slice_60s`, `slice_120s`, and `slice_180s` with exact reference text files. |
 | `run_benchmark.py` | Automated benchmarking harness. Dynamically detects CPU specs via `/proc/cpuinfo`, dynamically locates `transcribe-cli`, checks and auto-links Handy models, computes Word Error Rate (WER) and Real-Time Factor (RTF), and formats markdown/JSON reports. |
 | `README.md` | Comprehensive user guide, architecture documentation, model matrix, and quickstart instructions (zero emojis, no hardcoded paths). |
@@ -77,6 +78,11 @@ Handy has been explicitly configured to prioritize CPU:
 ---
 
 ## 6. Essential Operational Commands
+
+Download all benchmark models directly into `models/`:
+```bash
+python3 download_models.py
+```
 
 Check model catalog and download status:
 ```bash
