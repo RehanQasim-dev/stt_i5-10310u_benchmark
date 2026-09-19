@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """
-STT CPU Matrix Benchmark Runner
-Evaluates speech-to-text models on CPU across Q4_K_M, Q8_0, and ONNX formats.
-Supports execution via Handy CLI (forced to CPU via device-index 1 / settings) and native transcribe.cpp.
-Measures latency, Real-Time Factor (xRT), Word Error Rate (WER), and Character Error Rate (CER).
-Designed to be fully portable across any laptop or desktop system without hardcoded paths.
+STT CPU Matrix Benchmark Runner (Handy-Native)
+Evaluates speech-to-text models on CPU across Q8_0, Int8, and BIN formats exclusively via Handy.
+Forces CPU execution via Handy CLI (--device-index 1 / persisted settings).
+Measures latency, Real-Time Factor (RTF), Word Error Rate (WER), and accuracy.
 """
 
 import os
@@ -22,32 +21,6 @@ PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.join(PROJECT_DIR, "models")
 DATASET_DIR = os.path.join(PROJECT_DIR, "dataset")
 
-def find_transcribe_cli(explicit_path=None):
-    """Dynamically discover transcribe-cli binary across system paths and relative checkouts."""
-    if explicit_path and os.path.isfile(explicit_path) and os.access(explicit_path, os.X_OK):
-        return os.path.abspath(explicit_path)
-
-    env_path = os.environ.get("TRANSCRIBE_CLI")
-    if env_path and os.path.isfile(env_path) and os.access(env_path, os.X_OK):
-        return os.path.abspath(env_path)
-
-    which_path = shutil.which("transcribe-cli")
-    if which_path:
-        return which_path
-
-    candidates = [
-        os.path.join(PROJECT_DIR, "bin", "transcribe-cli"),
-        os.path.join(PROJECT_DIR, "..", "transcribe.cpp", "build", "bin", "transcribe-cli"),
-        os.path.join(PROJECT_DIR, "..", "..", "transcribe.cpp", "build", "bin", "transcribe-cli"),
-        os.path.expanduser("~/Documents/transcribe.cpp/build/bin/transcribe-cli"),
-        "/usr/local/bin/transcribe-cli",
-        "/usr/bin/transcribe-cli",
-    ]
-    for c in candidates:
-        if os.path.isfile(c) and os.access(c, os.X_OK):
-            return os.path.abspath(c)
-    return None
-
 def get_cpu_info():
     """Dynamically query host CPU information for portable benchmark reporting."""
     cpu_name = "Unknown CPU"
@@ -62,43 +35,31 @@ def get_cpu_info():
     threads = os.cpu_count() or 1
     return f"{cpu_name} ({threads} threads)"
 
-# Model definitions for evaluation
+# Evaluated models via Handy execution engine
 MODELS = [
-    {
-        "name": "Parakeet TDT 0.6B v2",
-        "family": "FastConformer (TDT)",
-        "quant": "Q4_K_M",
-        "format": "GGUF",
-        "size_mb": 454,
-        "type": "transcribe_cli",
-        "path": os.path.join(MODELS_DIR, "parakeet-tdt-0.6b-v2/parakeet-tdt-0.6b-v2-Q4_K_M.gguf")
-    },
-    {
-        "name": "Parakeet TDT 0.6B v2",
-        "family": "FastConformer (TDT)",
-        "quant": "Q8_0",
-        "format": "GGUF",
-        "size_mb": 696,
-        "type": "transcribe_cli",
-        "path": os.path.join(MODELS_DIR, "parakeet-tdt-0.6b-v2/parakeet-tdt-0.6b-v2-Q8_0.gguf")
-    },
     {
         "name": "Parakeet TDT 0.6B v2",
         "family": "FastConformer (TDT)",
         "quant": "Int8",
         "format": "ONNX",
-        "size_mb": 631,
-        "type": "handy",
-        "model_id": "parakeet-tdt-0.6b-v2-int8"
+        "size_mb": 451,
+        "model_id": "parakeet-tdt-0.6b-v2"
+    },
+    {
+        "name": "Parakeet TDT 0.6B v3",
+        "family": "FastConformer (TDT)",
+        "quant": "Int8",
+        "format": "ONNX",
+        "size_mb": 456,
+        "model_id": "parakeet-tdt-0.6b-v3"
     },
     {
         "name": "Canary 180M Flash",
         "family": "Conformer-AED",
-        "quant": "Q4_K_M",
-        "format": "GGUF",
-        "size_mb": 133,
-        "type": "transcribe_cli",
-        "path": os.path.join(MODELS_DIR, "canary-180m-flash/canary-180m-flash-Q4_K_M.gguf")
+        "quant": "FP32/Int8",
+        "format": "ONNX",
+        "size_mb": 146,
+        "model_id": "canary-180m-flash"
     },
     {
         "name": "Canary 180M Flash",
@@ -106,44 +67,7 @@ MODELS = [
         "quant": "Q8_0",
         "format": "GGUF",
         "size_mb": 208,
-        "type": "transcribe_cli",
-        "path": os.path.join(MODELS_DIR, "canary-180m-flash/canary-180m-flash-Q8_0.gguf")
-    },
-    {
-        "name": "Canary 180M Flash",
-        "family": "Conformer-AED",
-        "quant": "FP32/Int8",
-        "format": "ONNX",
-        "size_mb": 204,
-        "type": "handy",
-        "model_id": "canary-180m-flash"
-    },
-    {
-        "name": "Whisper Small.en",
-        "family": "Whisper (Encoder-Decoder)",
-        "quant": "Q4_K_M",
-        "format": "GGUF",
-        "size_mb": 164,
-        "type": "transcribe_cli",
-        "path": os.path.join(MODELS_DIR, "whisper-small.en/whisper-small.en-Q4_K_M.gguf")
-    },
-    {
-        "name": "Whisper Small.en",
-        "family": "Whisper (Encoder-Decoder)",
-        "quant": "Q8_0",
-        "format": "GGUF",
-        "size_mb": 257,
-        "type": "transcribe_cli",
-        "path": os.path.join(MODELS_DIR, "whisper-small.en/whisper-small.en-Q8_0.gguf")
-    },
-    {
-        "name": "Parakeet TDT CTC 110M",
-        "family": "Conformer-CTC",
-        "quant": "Q4_K_M",
-        "format": "GGUF",
-        "size_mb": 86,
-        "type": "transcribe_cli",
-        "path": os.path.join(MODELS_DIR, "parakeet-tdt_ctc-110m/parakeet-tdt_ctc-110m-Q4_K_M.gguf")
+        "model_id": "handy-computer/canary-180m-flash-gguf/canary-180m-flash-Q8_0.gguf"
     },
     {
         "name": "Parakeet TDT CTC 110M",
@@ -151,35 +75,23 @@ MODELS = [
         "quant": "Q8_0",
         "format": "GGUF",
         "size_mb": 129,
-        "type": "transcribe_cli",
-        "path": os.path.join(MODELS_DIR, "parakeet-tdt_ctc-110m/parakeet-tdt_ctc-110m-Q8_0.gguf")
+        "model_id": "handy-computer/parakeet-tdt_ctc-110m-gguf/parakeet-tdt_ctc-110m-Q8_0.gguf"
     },
     {
-        "name": "SenseVoiceSmall",
-        "family": "SenseVoice (CTC)",
-        "quant": "Q4_K_M",
-        "format": "GGUF",
-        "size_mb": 139,
-        "type": "transcribe_cli",
-        "path": os.path.join(MODELS_DIR, "SenseVoiceSmall/SenseVoiceSmall-Q4_K_M.gguf")
-    },
-    {
-        "name": "SenseVoiceSmall",
+        "name": "SenseVoice Small",
         "family": "SenseVoice (CTC)",
         "quant": "Q8_0",
         "format": "GGUF",
-        "size_mb": 241,
-        "type": "transcribe_cli",
-        "path": os.path.join(MODELS_DIR, "SenseVoiceSmall/SenseVoiceSmall-Q8_0.gguf")
+        "size_mb": 240,
+        "model_id": "handy-computer/SenseVoiceSmall-gguf/SenseVoiceSmall-Q8_0.gguf"
     },
     {
-        "name": "Whisper Medium.en",
+        "name": "Whisper Small.en",
         "family": "Whisper (Encoder-Decoder)",
-        "quant": "Q4_K_M",
+        "quant": "Q8_0",
         "format": "GGUF",
-        "size_mb": 481,
-        "type": "transcribe_cli",
-        "path": os.path.join(MODELS_DIR, "whisper-medium.en/whisper-medium.en-Q4_K_M.gguf")
+        "size_mb": 257,
+        "model_id": "handy-computer/whisper-small.en-gguf/whisper-small.en-Q8_0.gguf"
     },
     {
         "name": "Whisper Medium",
@@ -187,70 +99,14 @@ MODELS = [
         "quant": "Q4_1",
         "format": "BIN",
         "size_mb": 469,
-        "type": "handy",
         "model_id": "medium"
-    },
-    {
-        "name": "Nemotron Streaming 0.6B",
-        "family": "FastConformer (Streaming)",
-        "quant": "Q4_K_M",
-        "format": "GGUF",
-        "size_mb": 454,
-        "type": "transcribe_cli",
-        "path": os.path.join(MODELS_DIR, "nemotron-speech-streaming-en-0.6b/nemotron-speech-streaming-en-0.6b-Q4_K_M.gguf")
-    },
-    {
-        "name": "Parakeet TDT 0.6B v3",
-        "family": "FastConformer (TDT)",
-        "quant": "Q4_K_M",
-        "format": "GGUF",
-        "size_mb": 454,
-        "type": "transcribe_cli",
-        "path": os.path.join(MODELS_DIR, "parakeet-tdt-0.6b-v3/parakeet-tdt-0.6b-v3-Q4_K_M.gguf")
-    },
-    {
-        "name": "Parakeet TDT 0.6B v3",
-        "family": "FastConformer (TDT)",
-        "quant": "Q8_0",
-        "format": "GGUF",
-        "size_mb": 696,
-        "type": "transcribe_cli",
-        "path": os.path.join(MODELS_DIR, "parakeet-tdt-0.6b-v3/parakeet-tdt-0.6b-v3-Q8_0.gguf")
-    },
-    {
-        "name": "Parakeet TDT 0.6B v3",
-        "family": "FastConformer (TDT)",
-        "quant": "Int8",
-        "format": "ONNX",
-        "size_mb": 639,
-        "type": "handy",
-        "model_id": "parakeet-tdt-0.6b-v3"
-    },
-    {
-        "name": "Whisper Medium.en",
-        "family": "Whisper (Encoder-Decoder)",
-        "quant": "Q8_0",
-        "format": "GGUF",
-        "size_mb": 831,
-        "type": "transcribe_cli",
-        "path": os.path.join(MODELS_DIR, "whisper-medium.en/whisper-medium.en-Q8_0.gguf")
-    },
-    {
-        "name": "Nemotron Streaming 0.6B",
-        "family": "FastConformer (Streaming)",
-        "quant": "Q8_0",
-        "format": "GGUF",
-        "size_mb": 696,
-        "type": "transcribe_cli",
-        "path": os.path.join(MODELS_DIR, "nemotron-speech-streaming-en-0.6b/nemotron-speech-streaming-en-0.6b-Q8_0.gguf")
     },
     {
         "name": "Moonshine V2 Medium",
         "family": "Conformer Streaming",
         "quant": "Int8",
         "format": "ONNX",
-        "size_mb": 289,
-        "type": "handy",
+        "size_mb": 192,
         "model_id": "moonshine-medium-streaming-en"
     }
 ]
@@ -304,44 +160,15 @@ def get_audio_duration(wav_path: str) -> float:
     except Exception:
         return 0.0
 
-def run_transcribe_cli(cli_bin: str, model_path: str, wav_path: str) -> dict:
-    """Run transcription via native transcribe-cli on CPU."""
-    cmd = [
-        cli_bin,
-        "--backend", "cpu",
-        "-m", model_path,
-        wav_path
-    ]
-    t0 = time.time()
-    proc = subprocess.run(cmd, capture_output=True, text=True)
-    t1 = time.time()
-    wall_sec = t1 - t0
-    
-    canonical_text = ""
-    text_pieces = []
-    timing_info = {}
-    for line in proc.stdout.splitlines():
-        if line.startswith("text: "):
-            canonical_text = line[6:].strip()
-        m = re.search(r'\[\s*\d+\.\d+\s*->\s*\d+\.\d+\]\s*(?:p=[\d\.]+)?\s*(.*)', line)
-        if m:
-            text_pieces.append(m.group(1))
-        if line.strip().startswith("[info] timings:"):
-            timing_info["raw"] = line.strip()
-
-    final_text = canonical_text if canonical_text else "".join(text_pieces).strip()
-    return {
-        "text": final_text,
-        "wall_sec": round(wall_sec, 2),
-        "return_code": proc.returncode,
-        "error": proc.stderr if proc.returncode != 0 else None,
-        "timing_info": timing_info
-    }
-
 def check_handy_model_available(model_id: str) -> bool:
     """Check if Handy model is available, linking it if found in project models directory."""
     handy_dir = os.path.expanduser("~/.local/share/com.pais.handy/models")
     if os.path.exists(os.path.join(handy_dir, model_id)):
+        return True
+
+    # Extract base filename if model_id is a HuggingFace hub path
+    base_file = os.path.basename(model_id)
+    if os.path.exists(os.path.join(handy_dir, base_file)):
         return True
 
     candidates = [
@@ -397,8 +224,8 @@ def run_handy(model_id: str, wav_path: str) -> dict:
         "error": proc.stderr if proc.returncode != 0 else None
     }
 
-def evaluate_audio_file(audio_path: str, reference_text: str, script_name: str, slice_name: str, cli_bin: str):
-    """Run full model matrix against a single audio slice."""
+def evaluate_audio_file(audio_path: str, reference_text: str, script_name: str, slice_name: str):
+    """Run Handy model matrix against a single audio slice."""
     duration = get_audio_duration(audio_path)
     print(f"\n=======================================================")
     print(f">> Evaluating: {script_name} | Slice: {slice_name}")
@@ -410,22 +237,14 @@ def evaluate_audio_file(audio_path: str, reference_text: str, script_name: str, 
     results = []
     for m in MODELS:
         print(f"  Testing [{m['format']} {m['quant']}] {m['name']} ({m['size_mb']}MB)... ", end="", flush=True)
-        if m["type"] == "transcribe_cli":
-            if not cli_bin:
-                print("SKIPPED (transcribe-cli binary not located)")
-                continue
-            if not os.path.exists(m["path"]):
-                print("SKIPPED (Model file missing)")
-                continue
-            res = run_transcribe_cli(cli_bin, m["path"], audio_path)
-        else:
-            if not shutil.which("handy"):
-                print("SKIPPED (handy binary not located)")
-                continue
-            if not check_handy_model_available(m["model_id"]):
-                print("SKIPPED (Model file missing)")
-                continue
-            res = run_handy(m["model_id"], audio_path)
+        if not shutil.which("handy"):
+            print("SKIPPED (handy binary not located)")
+            continue
+        if not check_handy_model_available(m["model_id"]):
+            print("SKIPPED (Model not installed in Handy)")
+            continue
+
+        res = run_handy(m["model_id"], audio_path)
 
         if res["return_code"] != 0:
             print(f"FAILED (Code {res['return_code']})")
@@ -456,25 +275,27 @@ def evaluate_audio_file(audio_path: str, reference_text: str, script_name: str, 
     return results
 
 def main():
-    parser = argparse.ArgumentParser(description="STT CPU Matrix Benchmark Suite")
+    parser = argparse.ArgumentParser(description="STT CPU Matrix Benchmark Suite (Handy-Only)")
     parser.add_argument("--script", choices=["all", "non_technical", "technical"], default="all")
     parser.add_argument("--slices", nargs="+", default=["slice_30s", "slice_60s", "slice_120s", "slice_180s"])
     parser.add_argument("--audio", help="Direct test audio wav file override")
     parser.add_argument("--ref", help="Direct reference text file override")
-    parser.add_argument("--transcribe-cli", help="Explicit path to transcribe-cli binary")
     args = parser.parse_args()
 
-    cli_bin = find_transcribe_cli(args.transcribe_cli)
-    cpu_desc = get_cpu_info()
+    if not shutil.which("handy"):
+        print("[ERROR] 'handy' executable was not found in PATH.")
+        print("Please install Handy first: https://github.com/cjpais/handy/releases")
+        sys.exit(1)
 
+    cpu_desc = get_cpu_info()
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     out_dir = os.path.join(PROJECT_DIR, "logs", f"matrix_eval_{timestamp}")
     os.makedirs(out_dir, exist_ok=True)
 
     print(f"=======================================================")
-    print(f" STT CPU Benchmark Runner")
+    print(f" STT CPU Benchmark Runner (Handy-Only)")
     print(f" Host CPU       : {cpu_desc}")
-    print(f" transcribe-cli : {cli_bin if cli_bin else '[Not Found - Pass via --transcribe-cli]'}")
+    print(f" Engine         : Handy CLI ({shutil.which('handy')})")
     print(f" Log Directory  : {out_dir}")
     print(f"=======================================================")
 
@@ -483,14 +304,14 @@ def main():
     if args.audio and args.ref:
         with open(args.ref, "r") as f:
             ref_text = f.read().strip()
-        res = evaluate_audio_file(args.audio, ref_text, "custom_run", os.path.basename(args.audio), cli_bin)
+        res = evaluate_audio_file(args.audio, ref_text, "custom_run", os.path.basename(args.audio))
         all_evaluations.append({"script": "custom", "slice": os.path.basename(args.audio), "results": res})
     else:
         scripts = ["non_technical", "technical"] if args.script == "all" else [args.script]
         for s in scripts:
             s_dir = os.path.join(DATASET_DIR, s)
             if not os.path.exists(s_dir):
-                print(f"[!] Dataset directory {s_dir} not found. Run python3 record_dataset.py first.")
+                print(f"[!] Dataset directory {s_dir} not found. Run 'python3 record_dataset.py' first.")
                 continue
             for sl in args.slices:
                 wav_path = os.path.join(s_dir, f"{sl}.wav")
@@ -500,40 +321,43 @@ def main():
                     continue
                 with open(txt_path, "r") as f:
                     ref_text = f.read().strip()
-                res = evaluate_audio_file(wav_path, ref_text, s, sl, cli_bin)
+                res = evaluate_audio_file(wav_path, ref_text, s, sl)
                 all_evaluations.append({"script": s, "slice": sl, "results": res})
 
     if not all_evaluations:
-        print("\n[!] No audio slices found to evaluate.")
-        print("Please record your dataset first:")
-        print("  python3 record_dataset.py")
-        return
+        print("\nNo benchmarks executed. Please record the audio dataset first:")
+        print("    python3 record_dataset.py")
+        sys.exit(0)
 
-    # Save raw JSON
-    json_path = os.path.join(out_dir, "matrix_benchmark.json")
+    # Save complete JSON results
+    json_path = os.path.join(out_dir, "benchmark_results.json")
     with open(json_path, "w") as f:
-        json.dump(all_evaluations, f, indent=2)
+        json.dump({
+            "timestamp": timestamp,
+            "cpu": cpu_desc,
+            "evaluations": all_evaluations
+        }, f, indent=2)
 
-    # Generate Markdown Table Report
-    md_path = os.path.join(out_dir, "benchmark_report.md")
+    # Generate Markdown Summary Report
+    md_path = os.path.join(out_dir, "BENCHMARK_SUMMARY.md")
     with open(md_path, "w") as f:
-        f.write("# CPU Speech-to-Text Model Matrix Benchmark Report\n\n")
-        f.write(f"- **Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-        f.write(f"- **Compute Device:** {cpu_desc}\n")
-        f.write(f"- **Quantization Scope:** `Q4_K_M`, `Q8_0`, and `ONNX int8`\n\n")
+        f.write(f"# Speech-to-Text Benchmark Results (Intel CPU)\n\n")
+        f.write(f"- **CPU:** {cpu_desc}\n")
+        f.write(f"- **Execution Engine:** Handy CLI (CPU AVX2 SIMD)\n")
+        f.write(f"- **Date:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
 
-        for entry in all_evaluations:
-            f.write(f"## {entry['script'].upper()} - {entry['slice']}\n\n")
-            f.write("| Model | Format | Quant | Size (MB) | Audio (s) | Latency (s) | Speedup (xRT) | WER (%) | Word Acc (%) |\n")
-            f.write("| :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |\n")
-            for r in entry["results"]:
-                f.write(f"| {r['model']} | {r['format']} | {r['quant']} | {r['size_mb']} | {r['duration_sec']}s | {r['wall_sec']}s | **{r['rtf_speedup']}x** | {r['wer']}% | **{r['accuracy']}%** |\n")
+        for ev in all_evaluations:
+            f.write(f"### Dataset: {ev['script']} | Slice: {ev['slice']}\n\n")
+            f.write("| Model | Format / Quant | Size | Latency (s) | Speedup (xRT) | WER (%) | Accuracy (%) |\n")
+            f.write("| :--- | :---: | :---: | :---: | :---: | :---: | :---: |\n")
+            for r in ev["results"]:
+                f.write(f"| **{r['model']}** | {r['format']} {r['quant']} | {r['size_mb']} MB | {r['wall_sec']}s | {r['rtf_speedup']}x | {r['wer']}% | {r['accuracy']}% |\n")
             f.write("\n")
 
     print(f"\n=======================================================")
-    print(f"[OK] Benchmark complete!")
-    print(f"  JSON Results : {json_path}")
-    print(f"  Markdown Table: {md_path}")
+    print(f">> Benchmark complete!")
+    print(f"   Summary Report: {md_path}")
+    print(f"   Raw JSON Data : {json_path}")
     print(f"=======================================================\n")
 
 if __name__ == "__main__":
