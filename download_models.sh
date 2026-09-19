@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# download_models.sh - Automated Downloader for STT CPU Benchmark Matrix (< 700 MB)
+# download_models.sh - Automated Downloader for STT CPU Benchmark Matrix
 # Fetches optimized GGUF (Q4_K_M, Q8_0) and ONNX models from handy-computer HuggingFace
 # ==============================================================================
 
@@ -27,7 +27,7 @@ download_file() {
         return 0
     fi
 
-    echo "⬇ Downloading $filename..."
+    echo "[*] Downloading $filename..."
     if command -v aria2c &>/dev/null; then
         aria2c -x 4 -s 4 -c -d "$target_dir" -o "$filename" "$url"
     else
@@ -35,7 +35,7 @@ download_file() {
     fi
 }
 
-echo "=== Downloading STT CPU Benchmark Model Matrix (< 700 MB) ==="
+echo "=== Downloading STT CPU Benchmark Model Matrix ==="
 
 # 1. Parakeet TDT 0.6B v2
 download_file "$MODELS_DIR/parakeet-tdt-0.6b-v2" "parakeet-tdt-0.6b-v2-Q4_K_M.gguf" \

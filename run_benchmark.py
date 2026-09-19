@@ -21,7 +21,7 @@ MODELS_DIR = os.path.join(PROJECT_DIR, "models")
 DATASET_DIR = os.path.join(PROJECT_DIR, "dataset")
 TRANSCRIBE_CLI = "/home/rehan-10xe/Documents/transcribe.cpp/build/bin/transcribe-cli"
 
-# Model definitions strictly <= 700 MB
+# Model definitions for evaluation
 MODELS = [
     {
         "name": "Parakeet TDT 0.6B v2",
@@ -390,7 +390,7 @@ def main():
         f.write("# CPU Speech-to-Text Model Matrix Benchmark Report\n\n")
         f.write(f"- **Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write(f"- **Compute Device:** Intel(R) Core(TM) i5-10310U CPU @ 1.70GHz (AVX2, 8 threads)\n")
-        f.write(f"- **Quantization Scope:** Models $\\le 700$ MB (`Q4_K_M`, `Q8_0`, `ONNX int8`)\n\n")
+        f.write(f"- **Quantization Scope:** `Q4_K_M`, `Q8_0`, and `ONNX int8`\n\n")
 
         for entry in all_evaluations:
             f.write(f"## {entry['script'].upper()} - {entry['slice']}\n\n")

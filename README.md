@@ -1,6 +1,6 @@
 # Speech-to-Text Benchmark Suite (Intel Core i5-10310U)
 
-A reproducible, end-to-end speech-to-text (STT) benchmark suite evaluating models strictly under **700 MB** across **Q4_K_M**, **Q8_0**, and **ONNX** formats on an Intel Core i5-10310U CPU.
+A reproducible, end-to-end speech-to-text (STT) benchmark suite evaluating models across **Q4_K_M**, **Q8_0**, and **ONNX** formats on an Intel Core i5-10310U CPU.
 
 ---
 
@@ -19,23 +19,13 @@ Handy acts as the unified STT execution engine, managing two distinct runtime ba
 
 ---
 
-## 2. The Handy GGUF/GPU Issue & The CPU Fix
+## 2. Configuring Handy to Use CPU
 
-### The Problem
-When you run GGUF models in Handy (which delegates execution to `transcribe.cpp`), `transcribe.cpp` automatically probes for available hardware accelerators and prefers the integrated GPU (`Vulkan0`) by default. 
+When running GGUF models via `transcribe.cpp`, Handy defaults to the integrated GPU (`Vulkan0`), which is slower than the CPU on this hardware, so we configure Handy to use the CPU.
 
-On this hardware, the integrated Intel UHD Graphics is **substantially worse** than the CPU:
-- It lacks dedicated matrix cores and shares system memory bandwidth.
-- It suffers from Vulkan pipeline shader compilation pauses.
-- **Whisper Medium on Vulkan0 (iGPU):** 46.4s (1.07x Real-Time)
-- **Whisper Medium on CPU (AVX2):** 43.8s (1.13x Real-Time)
-- **Parakeet TDT 0.6B on CPU (AVX2):** 10.2s (5.00x Real-Time)
+Because modern versions of Handy do not expose a hardware dropdown in the settings GUI, you can set CPU execution through either of the following methods:
 
-### How to Force Handy to Use CPU for transcribe.cpp
-
-Because modern versions of Handy do not expose a hardware dropdown in the settings GUI, you can force CPU execution through either of the following methods:
-
-#### Method 1: Permanent Config Update (Recommended)
+### Method 1: Permanent Config Update (Recommended)
 Edit Handy's persisted configuration file:
 1. Stop Handy if it is currently running:
    ```bash
@@ -52,7 +42,7 @@ Edit Handy's persisted configuration file:
    [handy_app_lib::managers::transcription][INFO] Loaded whisper model ... bound backend 'CPU', bound device 'Intel(R) Core(TM) i5-10310U CPU @ 1.70GHz'
    ```
 
-#### Method 2: Headless CLI Override
+### Method 2: Headless CLI Override
 Pass `--device-index 1` directly to Handy when executing transcriptions:
 ```bash
 handy -f audio.wav --model medium --device-index 1
@@ -60,9 +50,7 @@ handy -f audio.wav --model medium --device-index 1
 
 ---
 
-## 3. Model Benchmark Matrix (< 700 MB)
-
-All evaluated models are constrained to <= 700 MB for fast loading and low memory footprints on resource-constrained systems.
+## 3. Model Benchmark Matrix
 
 | Model Family | Variant | Quantization | Size (MB) | Handy Internal Backend | Architecture |
 | :--- | :--- | :---: | :---: | :--- | :--- |
@@ -82,8 +70,6 @@ All evaluated models are constrained to <= 700 MB for fast loading and low memor
 | **Whisper Medium** | Legacy | q4_1 | 469 MB | transcribe.cpp | Whisper Enc-Dec (Autoregressive) |
 | **Nemotron Streaming 0.6B**| Streaming | Q4_K_M | 454 MB | transcribe.cpp | FastConformer Buffered Streaming |
 | **Moonshine V2 Medium** | Streaming | Int8 | 289 MB | ONNX Runtime (CPU) | Conformer Streaming |
-
-*(Note: Whisper Medium in Q8_0 is 793 MB and Parakeet V3 in Q8_0 is 705 MB, so both are excluded to maintain the strict 700 MB ceiling).*
 
 ---
 
